@@ -1,0 +1,25 @@
+{
+    "version": 0,
+    "debotAddress": "0:426046f5786e2a3748c975ae2c0245bb7ca970f8ac9845175bd2baa549a8e4d5",
+    "initMethod": "invokeUnlock",
+    "initArgs": {
+        "pool": "0:62c951a8bc4baf599961ca83626aea95f13e584fe8f1b9a561720bf1b228245a"
+    },
+    "abi": {
+        "ABI version": 2,
+        "version": "2.2",
+        "header": ["time"],
+        "functions": [
+            {
+                "name": "onClaim",
+                "inputs": [
+                    {"name":"status","type":"uint8"}
+                ],
+                "outputs": [
+                ]
+            }
+        ]
+    },
+    "quiet": false,
+    "chain": []
+  }

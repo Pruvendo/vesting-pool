@@ -1,0 +1,25 @@
+{
+    "version": 0,
+    "debotAddress": "0:426046f5786e2a3748c975ae2c0245bb7ca970f8ac9845175bd2baa549a8e4d5",
+    "initMethod": "invokeClaim",
+    "initArgs": {
+        "pool": "0:4b6889fc60cb4910c56151b2e51ba7d710cba576ebc1c882671d3aaa6687efa9"
+    },
+    "abi": {
+        "ABI version": 2,
+        "version": "2.2",
+        "header": ["time"],
+        "functions": [
+            {
+                "name": "onClaim",
+                "inputs": [
+                    {"name":"status","type":"uint8"}
+                ],
+                "outputs": [
+                ]
+            }
+        ]
+    },
+    "quiet": false,
+    "chain": []
+  }

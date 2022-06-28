@@ -1,0 +1,73 @@
+{
+	"ABI version": 2,
+	"version": "2.2",
+	"header": ["pubkey", "time", "expire"],
+	"functions": [
+		{
+			"name": "constructor",
+			"inputs": [
+				{"name":"amount","type":"uint128"},
+				{"name":"cliffMonths","type":"uint8"},
+				{"name":"vestingMonths","type":"uint8"},
+				{"name":"recipient","type":"address"},
+				{"name":"claimers","type":"map(uint256,bool)"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "claim",
+			"inputs": [
+				{"name":"poolId","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "get",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"poolId","type":"uint256"},
+				{"name":"poolCreator","type":"address"},
+				{"name":"createdAt","type":"uint32"},
+				{"name":"recipient","type":"address"},
+				{"name":"cliffEnd","type":"uint32"},
+				{"name":"vestingEnd","type":"uint32"},
+				{"name":"totalAmount","type":"uint128"},
+				{"name":"remainingAmount","type":"uint128"},
+				{"name":"unlockedAmount","type":"uint128"}
+			]
+		},
+		{
+			"name": "unlock",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		}
+	],
+	"data": [
+		{"key":1,"name":"id","type":"uint256"},
+		{"key":2,"name":"creator","type":"address"}
+	],
+	"events": [
+	],
+	"fields": [
+		{"name":"_pubkey","type":"uint256"},
+		{"name":"_timestamp","type":"uint64"},
+		{"name":"_constructorFlag","type":"bool"},
+		{"name":"id","type":"uint256"},
+		{"name":"creator","type":"address"},
+		{"name":"m_createdAt","type":"uint32"},
+		{"name":"m_cliffEnd","type":"uint32"},
+		{"name":"m_vestingEnd","type":"uint32"},
+		{"name":"m_vestingFrom","type":"uint32"},
+		{"name":"m_totalAmount","type":"uint128"},
+		{"name":"m_remainingAmount","type":"uint128"},
+		{"name":"m_vestingAmount","type":"uint128"},
+		{"name":"m_recipient","type":"address"},
+		{"name":"m_claimers","type":"map(uint256,bool)"},
+		{"name":"m_dbgUnlockAll","type":"bool"}
+	]
+}

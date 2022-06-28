@@ -1,0 +1,31 @@
+{
+    "version": 0,
+    "debotAddress": "0:426046f5786e2a3748c975ae2c0245bb7ca970f8ac9845175bd2baa549a8e4d5",
+    "initMethod": "invokeCreatePool",
+    "initArgs": {
+        "amount": "1000000",
+        "cliffMonths": 3,
+        "vestingMonths": 5,
+        "recipient": "0:66e01d6df5a8d7677d9ab2daf7f258f1e2a7fe73da5320300395f99e01dc3b5f",
+        "claimers": [
+            "0x816747e3c1e0c3be11797a76ffd5f823a1c933586cac2f170bc1395f1f25e15b"
+        ]
+    },
+    "abi": {
+        "ABI version": 2,
+        "version": "2.2",
+        "header": ["time"],
+        "functions": [
+            {
+                "name": "onCreatePool",
+                "inputs": [
+                    {"name":"status","type":"bool"}
+                ],
+                "outputs": [
+                ]
+            }
+        ]
+    },
+    "quiet": false,
+    "chain": []
+  }

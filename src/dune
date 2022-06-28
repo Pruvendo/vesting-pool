@@ -1,0 +1,6 @@
+(coq.theory
+ (name VestingProject)
+ (package pruvendo-vesting-pool) 
+)
+
+(include_subdirs qualified)

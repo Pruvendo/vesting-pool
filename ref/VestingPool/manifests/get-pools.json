@@ -1,0 +1,23 @@
+{
+    "version": 0,
+    "debotAddress": "0:426046f5786e2a3748c975ae2c0245bb7ca970f8ac9845175bd2baa549a8e4d5",
+    "initMethod": "invokeGetPools",
+    "initArgs": {},
+    "abi": {
+        "ABI version": 2,
+        "version": "2.2",
+        "header": ["time"],
+        "functions": [
+            {
+                "name": "onGetPools",
+                "inputs": [
+                    {"components":[{"name":"addr","type":"address"},{"name":"poolId","type":"uint256"},{"name":"poolCreator","type":"address"},{"name":"createdAt","type":"uint32"},{"name":"recipient","type":"address"},{"name":"cliffEnd","type":"uint32"},{"name":"vestingEnd","type":"uint32"},{"name":"totalAmount","type":"uint128"},{"name":"remainingAmount","type":"uint128"},{"name":"unlockedAmount","type":"uint128"}],"name":"pools","type":"tuple[]"}
+                ],
+                "outputs": [
+                ]
+            }
+        ]
+    },
+    "quiet": true,
+    "chain": []
+  }
