@@ -187,9 +187,16 @@ Fail Defined.
         }(amount, cliffMonths, vestingMonths, recipient, claimersMap);
         m_nextId++; *)
 Ursus Definition createPool (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping_uint256_uint256 (*uint256'[]*)): external PhantomType false .
+
 (* TODO *)
-  (* refine (contractOnly  _) .
-  refine (minValue  _) . *)
+  (* 
+   refine (contractOnly  _) .
+   refine (minValue  _) . *)
+  (*  
+   contractOnly 
+   minValue(amount + calcCreateGasFee(uint128(claimers.length))) *)
+
+  
    ::// new 'claimersMap : (  mapping  ( uint256 )( boolean ) ) @ "claimersMap" ;_|.
    (* for(uint256 pubkey: claimers) { *)
    (* :://{claimersMap}[{pubkey}] := TRUE  |. *)

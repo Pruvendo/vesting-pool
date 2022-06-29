@@ -167,6 +167,8 @@ Arguments onlyOwner  {_} {_}.
 Ursus Definition unlock : public PhantomType false .
 (* TODO *)
   (* refine (senderIs creator _) . *)
+  (* senderIs(creator) *)
+
    :://m_dbgUnlockAll := TRUE .
    :://return_ {} |.
 Defined. 
@@ -195,6 +197,8 @@ Defined.
 Ursus Definition claim (poolId :  uint256): external PhantomType true .
 (* TODO *)
   (* refine (onlyOwners m_claimers _) . *)
+  (* onlyOwners(m_claimers) *)
+
    :://require_((#{poolId} == id)) .
    :://  new ( 'unlocked : uint128 , 'unlockedPeriod : uint32 ) @ ( "unlocked" , "unlockedPeriod" ) := calcUnlocked( ) ; _ |.  
    :://require_((!{unlocked} > (β #{0}))) .
@@ -211,6 +215,8 @@ Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vesting
 (* TODO *)
   (* refine (contractOnly  _) . *)
   (* refine (minValue  _) . *)
+  (* contractOnly 
+  minValue(amount + CONSTRUCTOR_GAS) *)
    ::// new 'service : (  address ) @ "service"  :=  {} (*tvm->codeSalt(tvm->code())->get()->toSlice()->decode(address)*) ; _ |.
    ::// require_((!{service} == msg->sender), ERR_INVALID_SENDER) .
    ::// m_createdAt := (now) .
