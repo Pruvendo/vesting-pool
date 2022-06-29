@@ -23,6 +23,7 @@ depends: [
 ]
 
 pin-depends: [
+  ["coq-elpi.latest-git" "../coq-elpi-mod#master"]
   [ "pruvendo-base.latest-git" "../coq-finproof-base#master" ]
   [ "pruvendo-base-lib.latest-git" "../pruvendo-base-lib#master" ]
   [ "pruvendo-umlang.latest-git" "../solidity-monadic-language#moduless" ]
