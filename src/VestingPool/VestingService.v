@@ -188,9 +188,11 @@ Ursus Definition createPool (amount :  uint128) (cliffMonths :  uint8) (vestingM
 
   
    ::// new 'claimersMap : (  mapping  ( uint256 )( boolean ) ) @ "claimersMap" ;_|.
-   (* for(uint256 pubkey: claimers) { *)
-   (* :://{claimersMap}[{pubkey}] := TRUE  |. *)
-   (* } *)
+   ::// for ( 'pubkey : #{claimers} ) do { {_:UExpression _ false} } .
+   :://  new ( 'key : uint256 , 'value : uint256 ) @ ( "key" , "value" ) := pubkey ; _ |.  
+   ::// {claimersMap} := !{claimersMap} ->set (!{key}, TRUE)|.
+   
+  
    (* :// new  |{ VestingPoolPtr }|  
          with 
       [$ 
