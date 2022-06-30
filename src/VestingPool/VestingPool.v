@@ -43,10 +43,9 @@ Record Contract := {
    m_vestingFrom :  uint32;
    m_totalAmount :  uint128;
    m_remainingAmount :  uint128;
-   (* TODO *)
-   m_vestingAmount :  (*uint128 выкинуто потому что не работает операция*) uint32;
+   m_vestingAmount :  uint128;
    m_recipient :  address;
-   m_claimers :  XHMap  ( uint256 )( boolean );
+   m_claimers :  mapping ( uint256 )( boolean );
    m_dbgUnlockAll :  boolean
 }.
 UseLocal  uint128.
@@ -133,7 +132,7 @@ Arguments minValue _ {_} {_}.
 
 Definition contractOnly : modifier .
 unfold_mod.
-(* TODO Петя *)
+(* TODO *)
    :://require_((msg->sender != {} (*address((β #{0}))*))) .
   refine u.
 Defined. 
@@ -178,13 +177,12 @@ if ( (!{_now} > m_vestingEnd) ) then { {_:UExpression _ false} } else { {_:UExpr
 Ursus Definition calcUnlocked : private ( uint128 #  uint32) false .
    ::// new 'unlocked : uint128 @ "unlocked"  := (β #{0}) ; _ |.
    ::// new 'vestingPeriods : (  uint32 ) @ "vestingPeriods"  := (β #{0}) ; _ |.
-   (* TODO *)
-   ::// new '_now : (  uint32 ) @ "_now"  := {} (*if m_dbgUnlockAll then (m_vestingEnd + (β #{1})) else uint32(now) *)  ; _ |.
+   ::// new '_now : (  uint32 ) @ "_now"  := ?? m_dbgUnlockAll -> (m_vestingEnd + (β #{1})) -> (now)   ; _ |.
    ::// if ( (!{_now} > m_cliffEnd) ) then { {_:UExpression _ false} } .
    ::// {vestingPeriods} := ((!{_now} - m_vestingFrom) / (β VESTING_PERIOD)) .
    ::// if ( (!{_now} > m_vestingEnd) ) then { {_:UExpression _ false} } else { {_:UExpression _ false} }  |.
    ::// {unlocked} := m_remainingAmount  |.
-   ::// {unlocked} := (m_remainingAmount - math->min(m_remainingAmount, ι (!{vestingPeriods} *  ( m_vestingAmount))))  |.
+   ::// {unlocked} := (m_remainingAmount - math->min(m_remainingAmount, (ι !{vestingPeriods} *  ( m_vestingAmount))))  |.
    lia.
    :://return_ [ !{unlocked}, (!{vestingPeriods} * β VESTING_PERIOD) ] |.
 Defined. 
@@ -217,6 +215,7 @@ Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vesting
   (* refine (minValue  _) . *)
   (* contractOnly 
   minValue(amount + CONSTRUCTOR_GAS) *)
+  (* TODO *)
    ::// new 'service : (  address ) @ "service"  :=  {} (*tvm->codeSalt(tvm->code())->get()->toSlice()->decode(address)*) ; _ |.
    ::// require_((!{service} == msg->sender), ERR_INVALID_SENDER) .
    ::// m_createdAt := (now) .
@@ -229,7 +228,9 @@ Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vesting
    :://m_recipient := #{recipient} .
    :://m_claimers := #{claimers} .
    :://m_vestingFrom := m_cliffEnd .
-   :://m_vestingAmount := {} (*if(#{vestingMonths} > (β #{0})) then(m_totalAmount / #{vestingMonths}) else  (β #{0})*) .
+   
+   :://m_vestingAmount := ?? ( ( #{vestingMonths}) >  (β #{0})) ->  ( ( m_totalAmount) / ι #{vestingMonths}) -> ( β #{0}).
+   lia.
    :://return_ {} |.
 Defined. 
 EndContract Implements (*интерфейсы*) IVestingPool.

@@ -149,12 +149,12 @@ Ursus Definition getPoolCodeHash : external ( uint256) false .
    :://{b}->store(address(this)) .
    (* TODO *)
    ::// new 'code : (  cell_ ) @ "code"  (*:= tvm->setCodeSalt(m_poolCode, !{b}->toCell()) *) ; _ |.
-   (* ::// {codeHash} := tvm->hash(!{code})   |. *)
+   (* ::// {codeHash} := tvm->hash(!{code})   |.  эта строчка не нужна *)
    ::// return_ tvm->hash(!{code}) |.
 Defined. 
 
 (* TODO *)
-(*
+(* 
 Ursus Definition buildPoolImage (creator :  address) (id :  uint256): private ( cell_) false .
    ::// new 'b : (  builder_ ) @ "b"  ; _ |.
    :://{b}->store(address(this)) .
@@ -173,19 +173,9 @@ Ursus Definition buildPoolImage (creator :  address) (id :  uint256): private ( 
 
    ::// return_ !{b}->toCell() |.
 Fail Defined. 
-*)
+ *)
 
-(*  mapping(uint256 => bool) claimersMap;
-        for(uint256 pubkey: claimers) {
-            claimersMap[pubkey] = true;
-        }
-        new VestingPool{
-            value: 0,
-            flag: 64,
-            bounce: true,
-            stateInit: buildPoolImage(msg.sender, m_nextId)
-        }(amount, cliffMonths, vestingMonths, recipient, claimersMap);
-        m_nextId++; *)
+
 Ursus Definition createPool (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping_uint256_uint256 (*uint256'[]*)): external PhantomType false .
 
 (* TODO *)

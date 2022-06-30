@@ -90,7 +90,7 @@ contract VestingService is IVestingService, Modifiers
     // TODO remove before release
     //
 
-    function onCodeUpgrade() internal /*override*/ {
+    function onCodeUpgrade() internal /*petya override*/ {
         tvm.resetStorage();
     }
 }
