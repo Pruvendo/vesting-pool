@@ -1,18 +1,33 @@
+
 Require Import Coq.Program.Basics. 
 Require Import Coq.Strings.String.
 Require Import Setoid. 
 Require Import ZArith.
 Require Import Coq.Program.Equality.
 Require Import Lia.
+Require Import Ascii.
 
-Require Import FinProof.All.
-Require Import UMLang.All.
+Require Import FinProof.Common.
+Require Import FinProof.MonadTransformers21.
+Require Import FinProof.StateMonad21.
+Require Import FinProof.StateMonad21Instances.
+Require Import FinProof.Types.IsoTypes.
+Require Import FinProof.ProgrammingWith.
+
+Require Import UMLang.UrsusLib. 
+Require Import UMLang.LocalClassGenerator.ClassGenerator.
+Require Import UMLang.GlobalClassGenerator.ClassGenerator.
+
 Require Import UrsusStdLib.Solidity.All.
-Require Import UrsusTVM.Solidity.All.
 
+Require Import UrsusTVM.Solidity.tvmTypes.
+Require Import UrsusTVM.Solidity.tvmFunc.
+Require Import UrsusTVM.Solidity.tvmNotations.
+Require Import UrsusTVM.Solidity.tvmCells.
 
 Require Import UrsusDefinitions.
-Require Import ForReverseTranslation.
+Require Import UrsusDefinitions2.
+
 Import UrsusNotations.
 Local Open Scope xlist_scope.
 Local Open Scope record.
@@ -20,19 +35,30 @@ Local Open Scope program_scope.
 Local Open Scope glist_scope.
 Local Open Scope ursus_scope.
 Local Open Scope usolidity_scope.
-Local Open Scope string_scope.
-Local Open Scope N_scope.
-(*Require Import VestingPool.Modifiers. (*contract*) *)
-Require Import VestingPool.interfaces.IVestingPool. (*interface*)
-Require Import VestingPool.interfaces.IdbgPool. (*interface*)
-Module VestingPoolContract.
-   
 
+From elpi Require Import elpi.
+
+
+Local Open Scope struct_scope.
+Local Open Scope N_scope.
+Local Open Scope string_scope.
+Require Import VestingPool.Modifiers. (*contract*)
+Require Export VestingPool.VestLib. (*library*)
+Require Import VestingPool.interfaces.IVestingPool. (*interface*)
+Require Import VestingPool.interfaces.IOnPoolActivated. (*interface*)
+
+Module VestingPoolContract.
+Opaque address.
 Contract VestingPool ;
 Sends To 
-    IVestingPool (*interface*) 
-    IdbgPool (*interface*)  ; 
+    
+    IOnPoolActivated (*interface*)  ; 
+(* Контракты *)
 (* Inherits  Modifiers ; *)
+Constants 
+Definition (*VestingPool*) CONSTRUCTOR_GAS : uint128 := Build_XUBInteger 100000000 (*0.1 ton*)
+Definition (*VestingPool*) VESTING_PERIOD : uint32 := Build_XUBInteger (30 * 86400)(*30 days*);
+
 Record Contract := {
 
    id : _static ( uint256);
@@ -45,51 +71,31 @@ Record Contract := {
    m_remainingAmount :  uint128;
    m_vestingAmount :  uint128;
    m_recipient :  address;
-   m_claimers :  mapping ( uint256 )( boolean );
-   m_dbgUnlockAll :  boolean
+   m_claimers :  XHMap  ( uint256 )( boolean )
 }.
-UseLocal  uint128.
-UseLocal  uint32.
-UseLocal  address.
-UseLocal  uint256.
+Transparent address.
+UseLocal Definition _ := [
+     uint128;
+     uint32;
+     address
+].
 
-(* 
-Context {VestingPool_ι_CONSTRUCTOR_GAS_  :  uint128 }. 
-Notation " 'CONSTRUCTOR_GAS' " := (sInject VestingPool_ι_CONSTRUCTOR_GAS_) (in custom URValue at level 0) : ursus_scope. 
-Context {VestingPool_ι_VESTING_PERIOD_  :  uint32 }. 
-Notation " 'VESTING_PERIOD' " := (sInject VestingPool_ι_VESTING_PERIOD_) (in custom URValue at level 0) : ursus_scope. 
+(* Notation "'new' x ':' ty ':=' r ';' f  " := (DynamicBinding (new_lvalue _)
+             (fun x: ULValue ty => StrictBinding (AssignExpression x r) f ) )
+              (in custom ULValue at level 0, 
+              r custom URValue at level 0,
+              ty constr at level 0,       
+              f custom ULValue at level 100, (*bug in coq?!*)
+              x binder ) : ursus_scope.  
 
-Context {Modifiers_ι_ERR_NOT_SELF_  :  uint256 }. 
-Notation " 'Modifiers->ERR_NOT_SELF' " := (sInject Modifiers_ι_ERR_NOT_SELF_) (in custom URValue at level 0) : ursus_scope. 
-Context {Modifiers_ι_ERR_LOW_BALANCE_  :  uint256 }. 
-Notation " 'Modifiers->ERR_LOW_BALANCE' " := (sInject Modifiers_ι_ERR_LOW_BALANCE_) (in custom URValue at level 0) : ursus_scope. 
-Context {Modifiers_ι_ERR_LOW_AMOUNT_  :  uint256 }. 
-Notation " 'Modifiers->ERR_LOW_AMOUNT' " := (sInject Modifiers_ι_ERR_LOW_AMOUNT_) (in custom URValue at level 0) : ursus_scope. 
-Context {Modifiers_ι_ERR_ADDR_ZERO_  :  uint256 }. 
-Notation " 'Modifiers->ERR_ADDR_ZERO' " := (sInject Modifiers_ι_ERR_ADDR_ZERO_) (in custom URValue at level 0) : ursus_scope. 
-Context {Modifiers_ι_ERR_EMPTY_CELL_  :  uint256 }. 
-Notation " 'Modifiers->ERR_EMPTY_CELL' " := (sInject Modifiers_ι_ERR_EMPTY_CELL_) (in custom URValue at level 0) : ursus_scope. 
-Context {Modifiers_ι_ERR_INVALID_SENDER_  :  uint256 }. 
-Notation " 'Modifiers->ERR_INVALID_SENDER' " := (sInject Modifiers_ι_ERR_INVALID_SENDER_) (in custom URValue at level 0) : ursus_scope. 
-Context {Modifiers_ι_ERR_LOW_FEE_  :  uint256 }. 
-Notation " 'Modifiers->ERR_LOW_FEE' " := (sInject Modifiers_ι_ERR_LOW_FEE_) (in custom URValue at level 0) : ursus_scope.  *)
+Notation "'new' x ':' ty ';' f  " := (DynamicBinding (new_lvalue _)
+             (fun x: ULValue ty => StrictBinding (AssignExpression x || {} || ) f ) )
+              (in custom ULValue at level 0, 
+              ty constr at level 0,       
+              f custom ULValue at level 100, (*bug in coq?!*)
+              x binder ) : ursus_scope. *)
 
-(* 
-
-Context {Modifiers_ι_ERR_NOT_SELF_  :  uint256 }. 
-Notation " 'ERR_NOT_SELF' " := (sInject Modifiers_ι_ERR_NOT_SELF_) (in custom URValue at level 0) : ursus_scope. 
-Context {Modifiers_ι_ERR_LOW_BALANCE_  :  uint256 }. 
-Notation " 'ERR_LOW_BALANCE' " := (sInject Modifiers_ι_ERR_LOW_BALANCE_) (in custom URValue at level 0) : ursus_scope. 
-Context {Modifiers_ι_ERR_LOW_AMOUNT_  :  uint256 }. 
-Notation " 'ERR_LOW_AMOUNT' " := (sInject Modifiers_ι_ERR_LOW_AMOUNT_) (in custom URValue at level 0) : ursus_scope. 
-Context {Modifiers_ι_ERR_ADDR_ZERO_  :  uint256 }. 
-Notation " 'ERR_ADDR_ZERO' " := (sInject Modifiers_ι_ERR_ADDR_ZERO_) (in custom URValue at level 0) : ursus_scope. 
-Context {Modifiers_ι_ERR_EMPTY_CELL_  :  uint256 }. 
-Notation " 'ERR_EMPTY_CELL' " := (sInject Modifiers_ι_ERR_EMPTY_CELL_) (in custom URValue at level 0) : ursus_scope. 
-Context {Modifiers_ι_ERR_INVALID_SENDER_  :  uint256 }. 
-Notation " 'ERR_INVALID_SENDER' " := (sInject Modifiers_ι_ERR_INVALID_SENDER_) (in custom URValue at level 0) : ursus_scope. 
-Context {Modifiers_ι_ERR_LOW_FEE_  :  uint256 }. 
-Notation " 'ERR_LOW_FEE' " := (sInject Modifiers_ι_ERR_LOW_FEE_) (in custom URValue at level 0) : ursus_scope.  *)
+(* ******* *)
 
 
 Definition ERR_LOW_FEE := 101.
@@ -99,15 +105,6 @@ Definition ERR_ADDR_ZERO := 104.
 Definition ERR_LOW_AMOUNT := 105.
 Definition ERR_LOW_BALANCE := 106.
 Definition ERR_NOT_SELF := 107.
-Print XUInteger.
-Check Build_XUBInteger.
-Definition VESTING_PERIOD : uint :=  (30 (*days*) * 86400).
-Definition CONSTRUCTOR_GAS : uint := ( (*0.1 ton*) 100000000).
-
-Notation " 'VESTING_PERIOD' " := (sInject VESTING_PERIOD ) (in custom URValue at level 0) : ursus_scope. 
-Notation " 'CONSTRUCTOR_GAS' " := (sInject CONSTRUCTOR_GAS) (in custom URValue at level 0) : ursus_scope. 
-
-
 Notation " 'ERR_LOW_FEE' " := (sInject ERR_LOW_FEE) (in custom URValue at level 0) : ursus_scope. 
 Notation " 'ERR_INVALID_SENDER' " := (sInject ERR_INVALID_SENDER) (in custom URValue at level 0) : ursus_scope. 
 Notation " 'ERR_EMPTY_CELL' " := (sInject ERR_EMPTY_CELL) (in custom URValue at level 0) : ursus_scope. 
@@ -116,9 +113,10 @@ Notation " 'ERR_LOW_AMOUNT' " := (sInject ERR_LOW_AMOUNT) (in custom URValue at 
 Notation " 'ERR_LOW_BALANCE' " := (sInject ERR_LOW_BALANCE) (in custom URValue at level 0) : ursus_scope. 
 Notation " 'ERR_NOT_SELF' " := (sInject ERR_NOT_SELF) (in custom URValue at level 0) : ursus_scope. 
 
+
 Definition senderIs (expected :  address): modifier .
 unfold_mod.
-   ::// require_((msg->sender == #{expected}), ERR_INVALID_SENDER) .
+   :://require_((msg->sender == #{expected}),  ERR_INVALID_SENDER) .
   refine u.
 Defined. 
 Arguments senderIs _ {_} {_}.
@@ -132,59 +130,48 @@ Arguments minValue _ {_} {_}.
 
 Definition contractOnly : modifier .
 unfold_mod.
-(* TODO *)
    :://require_((msg->sender != {} (*address((β #{0}))*))) .
   refine u.
 Defined. 
 Arguments contractOnly  {_} {_}.
-
 #[local]
 Definition modifier_false := forall X b, UExpression X b -> UExpression X b .
-#[local]
-Tactic Notation "unfold_mod_false" := (unfold modifier_false; intros X b u).
+
 Definition accept : modifier_false .
-unfold_mod_false.
+unfold_mod.
    :://tvm->accept() .
   refine u.
 Defined. 
 Arguments accept  {_} {_}.
 
-Definition onlyOwners (keys :  mapping  ( uint256 )( boolean )): modifier .
+Definition onlyOwners (keys :  XHMap  ( uint256 )( boolean )): modifier .
 unfold_mod.
-   :://require_(#{keys}->exists(msg->pubkey()), #{100%N} ) .
+   :://require_((#{keys})->exists(msg->pubkey()), (#{100})) .
   refine u.
 Defined. 
 Arguments onlyOwners _ {_} {_}.
 
 Definition onlyOwner : modifier .
 unfold_mod.
-   :://require_((msg->pubkey() == tvm->pubkey()), #{100%N}) .
+   :://require_((msg->pubkey() == tvm->pubkey()), (#{100})) .
   refine u.
 Defined. 
 Arguments onlyOwner  {_} {_}.
+(* ******* *)
 
-Ursus Definition unlock : public PhantomType false .
-(* TODO *)
-  (* refine (senderIs creator _) . *)
-  (* senderIs(creator) *)
-
-   :://m_dbgUnlockAll := TRUE .
-   :://return_ {} |.
-Defined. 
-
-(* Definition shortIfElse{b0 R1 b1} (condition: URValue boolean b0) (thenExpr: UExpression R1 b1).
-if ( (!{_now} > m_vestingEnd) ) then { {_:UExpression _ false} } else { {_:UExpression _ false} } . *)
 Ursus Definition calcUnlocked : private ( uint128 #  uint32) false .
-   ::// new 'unlocked : uint128 @ "unlocked"  := (β #{0}) ; _ |.
+   ::// new 'unlocked : (  uint128 ) @ "unlocked"  := (β #{0}) ; _|.
    ::// new 'vestingPeriods : (  uint32 ) @ "vestingPeriods"  := (β #{0}) ; _ |.
-   ::// new '_now : (  uint32 ) @ "_now"  := ?? m_dbgUnlockAll -> (m_vestingEnd + (β #{1})) -> (now)   ; _ |.
+   ::// new '_now : (  uint32 ) @ "_now"  := (now) ; _ |.
    ::// if ( (!{_now} > m_cliffEnd) ) then { {_:UExpression _ false} } .
-   ::// {vestingPeriods} := ((!{_now} - m_vestingFrom) / (β VESTING_PERIOD)) .
-   ::// if ( (!{_now} > m_vestingEnd) ) then { {_:UExpression _ false} } else { {_:UExpression _ false} }  |.
+   ::// {vestingPeriods} := ((!{_now} - m_vestingFrom) / VESTING_PERIOD) .
+   ::// if ( (!{_now} > m_vestingEnd) ) then { {_:UExpression _ false} } else { {_:UExpression _ false} } |.
    ::// {unlocked} := m_remainingAmount  |.
-   ::// {unlocked} := (m_remainingAmount - math->min(m_remainingAmount, (ι !{vestingPeriods} *  ( m_vestingAmount))))  |.
+   
+   ::// {unlocked} := math->min( m_remainingAmount,  (ι !{vestingPeriods} *  m_vestingAmount))  |.
    lia.
-   :://return_ [ !{unlocked}, (!{vestingPeriods} * β VESTING_PERIOD) ] |.
+
+   :://return_ [ !{unlocked}, (!{vestingPeriods} * VESTING_PERIOD) ] |.
 Defined. 
 
 Ursus Definition get : external ( uint256 #  address #  uint32 #  address #  uint32 #  uint32 #  uint128 #  uint128 #  uint128) false .
@@ -192,36 +179,39 @@ Ursus Definition get : external ( uint256 #  address #  uint32 #  address #  uin
    ::// return_ [ [ [ [ [ [ [ [ !id , !creator], !m_createdAt], !m_recipient] , !m_cliffEnd] , !m_vestingEnd] , !m_totalAmount] , !m_remainingAmount] , !{unlocked}] |.
 Defined. 
 
+Ursus Definition onBounce (slice :  slice_): external PhantomType false .
+(* TODO *)
+   :://tvm->transfer(creator, (β #{0}), FALSE, (β #{64})) .
+   ://return_ {} |.
+Defined. 
+
 Ursus Definition claim (poolId :  uint256): external PhantomType true .
 (* TODO *)
   (* refine (onlyOwners m_claimers _) . *)
-  (* onlyOwners(m_claimers) *)
-
-   :://require_((#{poolId} == id)) .
+   :://require_(((#{poolId}) == id)) .
    :://  new ( 'unlocked : uint128 , 'unlockedPeriod : uint32 ) @ ( "unlocked" , "unlockedPeriod" ) := calcUnlocked( ) ; _ |.  
    :://require_((!{unlocked} > (β #{0}))) .
    :://tvm->accept() .
    :://m_remainingAmount -= !{unlocked} .
    :://m_vestingFrom += !{unlockedPeriod} .
-   :://tvm->transfer(m_recipient, !{unlocked}, FALSE, (β #{2})) .
+   :://tvm->transfer(m_recipient, !{unlocked}, TRUE, (β #{2})) .
    ::// if ( (m_remainingAmount == (β #{0})) ) then { {_:UExpression _ false} } .
    :://selfdestruct(creator)  |.
-   :://return_ {} |.
+
+   ://return_ {} |.
 Defined. 
 
-Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping  ( uint256 )( boolean )): public PhantomType true .
-(* TODO *)
-  (* refine (contractOnly  _) . *)
-  (* refine (minValue  _) . *)
-  (* contractOnly 
-  minValue(amount + CONSTRUCTOR_GAS) *)
+Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )): public PhantomType true .
+  refine (contractOnly  _) .
   (* TODO *)
-   ::// new 'service : (  address ) @ "service"  :=  {} (*tvm->codeSalt(tvm->code())->get()->toSlice()->decode(address)*) ; _ |.
-   ::// require_((!{service} == msg->sender), ERR_INVALID_SENDER) .
-   ::// m_createdAt := (now) .
-   ::// m_cliffEnd :=  (m_createdAt + ι ( #{cliffMonths} * (β #{30}))) .
+  (* refine (minValue  _) . *)
+  (* TODO *)
+   ::// new 'service : (  address ) @ "service"  := {} (*tvm->codeSalt(tvm->code())->get()->toSlice()->decode(address) *); _ |.
+   :://require_((!{service} == msg->sender), ERR_INVALID_SENDER) .
+   :://m_createdAt := now.
+   :://m_cliffEnd := (m_createdAt + (ι (#{cliffMonths}) * (β #{30}))) .
    lia.
-   ::// m_vestingEnd := (m_cliffEnd + ι (#{vestingMonths} * (β #{30}))) .
+   :://m_vestingEnd := (m_cliffEnd + (ι (#{vestingMonths}) * (β #{30}))) .
    lia.
    :://m_totalAmount := #{amount} .
    :://m_remainingAmount := m_totalAmount .
@@ -229,9 +219,29 @@ Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vesting
    :://m_claimers := #{claimers} .
    :://m_vestingFrom := m_cliffEnd .
    
-   :://m_vestingAmount := ?? ( ( #{vestingMonths}) >  (β #{0})) ->  ( ( m_totalAmount) / ι #{vestingMonths}) -> ( β #{0}).
+   :://m_vestingAmount :=  ((#{vestingMonths}) > (β #{0})) ? (m_totalAmount / ι #{vestingMonths}) : m_totalAmount .
    lia.
-   :://return_ {} |.
+   (* IOnPoolActivated(service).onPoolActivated{
+            value: 0.03 ever, bounce: false, flag: 0
+        }(); *)
+   
+   ::// IOnPoolActivated.onPoolActivated ( ) 
+         ⤳ (!{service}) with 
+         [$ 
+               (β #{30000000} (*0.03 ever*)) ⇒ { Message_ι_value};
+               FALSE ⇒ { Message_ι_bounce};
+               (β #{0}) ⇒ { Message_ι_flag}
+         $].
+   ://return_ {} |.
 Defined. 
+
 EndContract Implements (*интерфейсы*) IVestingPool.
 End VestingPoolContract.
+Import VestingPoolContract.
+Notation " 'new' lm 'with' d '(' amount ',' cliffMonths ',' vestingMonths ',' recipient ',' claimersMap ')' " := 
+   (tvm_newContract_right lm d (constructor_right amount cliffMonths vestingMonths recipient claimersMap) )
+(in custom URValue at level 0 (* , lm custom ULValue at level 0 *), d custom URValue at level 0 ) : ursus_scope .
+Notation " 'new' lm 'with' d '(' amount ',' cliffMonths ',' vestingMonths ',' recipient ',' claimersMap ')' " := 
+   (tvm_newContract_left lm d (constructor_right amount cliffMonths vestingMonths recipient claimersMap) )
+   (in custom ULValue at level 0 , lm custom ULValue at level 0, d custom URValue at level 0 ) : ursus_scope .
+   

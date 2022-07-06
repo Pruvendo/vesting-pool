@@ -14,7 +14,9 @@ Require Import FinProof.Types.IsoTypes.
 Require Import FinProof.ProgrammingWith.
 
 Require Import UMLang.UrsusLib. 
+Require Import UMLang.LocalClassGenerator.ClassGenerator.
 Require Import UMLang.GlobalClassGenerator.ClassGenerator.
+
 Require Import UrsusStdLib.Solidity.stdTypes.
 Require Import UrsusStdLib.Solidity.stdErrors.
 Require Import UrsusStdLib.Solidity.stdFunc.
@@ -39,35 +41,13 @@ Local Open Scope usolidity_scope.
 
 From elpi Require Import elpi.
 
+(* Require Import interfaces.IGiver.
+Require Import interfaces.ICrash. *)
+
 Local Open Scope struct_scope.
 Local Open Scope N_scope.
 Local Open Scope string_scope.
 
-
-Notation "'int'" := (XInteger) (at level 2): usolidity_scope.
-Notation "'uint'" := (XUInteger) (at level 2): usolidity_scope.
-Notation "'uint8'" := (XUInteger8) (at level 2): usolidity_scope.
-Notation "'uint16'" := (XUInteger16) (at level 2): usolidity_scope.
-Notation "'uint32'" := (XUInteger32) (at level 2): usolidity_scope.
-Notation "'uint64'" := (XUInteger64) (at level 2): usolidity_scope.
-Notation "'uint128'" := (XUInteger128) (at level 2): usolidity_scope.
-Notation "'uint256'" := (XUInteger256) (at level 2): usolidity_scope.
-
-Notation "'string'" := (XString) (at level 2): usolidity_scope.
-Notation "'boolean'" := (XBool) (at level 2): usolidity_scope.
-Notation "'optional'" := (XMaybe) (at level 2): usolidity_scope.
-Notation "'bytes'" := (XBytes) (at level 2): usolidity_scope.
-Notation "'mapping'" := (XHMap) (at level 2): usolidity_scope.
-Notation "'queue'" := (XQueue) (at level 2): usolidity_scope.
-Notation "'TvmCell'" := (cell) (at level 2): usolidity_scope.
-Notation "'TvmSlice'" := (slice) (at level 2): usolidity_scope.
-Notation "'TvmBuilder'" := (builder) (at level 2): usolidity_scope.
-Notation "'tuple'" := (XProd) (at level 2): usolidity_scope.
-
-
-
-About  wrapULExpression.
-Locate "int16".
 
 (* Ltac unfoldTerm T := fun a b x =>
 ( let TT := fresh "TT" in
@@ -76,11 +56,25 @@ Locate "int16".
   unfold doCrash in HTT; 
   exact TT). *)
 
+Elpi Tactic add_context.
+
+Elpi Accumulate Db global_fields_utils.
+
+Elpi Accumulate lp:{{
+solve _ _  :- 
+  get_name "LocalStateLRecord" LSLR,
+  coq.env.add-context-proofmode (some "Foo") {{
+      LocalStateField XHMap lp:LSLR boolean
+    }} tt tt.
+}}.
+
+Elpi Typecheck.
+
+
 
 Elpi Tactic clear_file.
 
 Elpi Accumulate lp:{{
-
 
 solve (goal _Ctx _ _GoalType _ [trm FN]) _ :- 
   coq.term->string FN FNS,
@@ -92,106 +86,7 @@ solve (goal _Ctx _ _GoalType _ [trm FN]) _ :-
 
 }}.
 
-
-Elpi Command Test.
-
-Elpi Accumulate Db global_fields_utils.
-
-Check String.
-Check "A"%char.
-
-Elpi Accumulate lp:{{
-
-pred starts_with  i:string, i:string.
-starts_with S1 S2 :- 
-  (K1 is size S1),
-  (K2 is size S2),
-  (K1 =< K2),
-  (S21 is substring S2 0 K1),
-  S1 = S21.
-
-pred split_string  i:string, i:string, i:string, o:list string.
-split_string Acc P S SL :-
-    starts_with P S,
-    (KS is size S),
-    (KP is size P),
-    (KS > KP), 
-    coq.say S KS KP,
-    (SS is substring S KP (KS - KP)), !,
-    coq.say SS,
-    split_string "" P SS SLL,
-    (/* ((Acc = ""), (SL = SLL) ); */ SL = [Acc | SLL]). 
-split_string Acc P S [Acc] :-
-    /* not(Acc = ""), */
-    starts_with P S,
-    (KS is size S),
-    (KP is size P),
-    (KS = KP).
-/* split_string Acc P S [] :-
-    (Acc = ""),
-    starts_with P S,
-    (KS is size S),
-    (KP is size P),
-    (KS = KP). */
-split_string Acc P "" [Acc] .
-/* split_string Acc P "" [] :-
-  Acc = "". */
-split_string Acc P S SL :-
-  (K is size S),
-  (A is substring S 0 1),
-  (B is substring S 1 (K - 1)),
-  (Acc1 is Acc ^ A),
-  split_string Acc1 P B SL.
-
-main [str A]  :-
-    coq.string->term A AT,
-    coq.say AT.
-    /* split_string "" A B L, 
-    coq.say "yay" L . */
-
-}}.
-
 Elpi Typecheck.
-
-Elpi Test "ABCDEFGH;\/1234567890-[]';.,./~!@#$%^&|""
-".
-
-
-Elpi Tactic testmsolve.
-
-Elpi Accumulate lp:{{
-
-type set string -> term -> open-tactic.
-set N V (goal Ctx R T E _ as G) GS :- 
-  std.assert! (coq.ltac.id-free? N G) "name already taken",
-  coq.id->name N NN,
-  refine (let NN _ V _) G GS.
-
-type testtac list sealed-goal -> open-tactic.
-testtac GG G GS :-
-coq.ltac.all (coq.ltac.open (set "k" {{77}})) GG GS 
-.
-
-type set-solution open-tactic.
-set-solution (goal Ctx T Ty E [trm T] as G) []. 
-set-solution  _ _ :- coq.error "cannot set solution". 
-
-msolve ([G|GX] as GG) GX :-
-  coq.ltac.open set-solution G _.
-}}.
-
-Elpi Typecheck testmsolve.
-
-Goal True.
-
-assert True.
-elpi testmsolve (I).
-elpi testmsolve (I).
-Qed.
-
-Check DynamicBinding.
-About apply_pure.
-
 
 Elpi Db bk_translate_utils lp:{{
 
@@ -203,9 +98,9 @@ pred translate_urscalar i:term, i:goal-ctx, i:int, o:int, o:string.
 translate_urscalar (app L) Ctx HoleId HoleId SS :- 
   coq.say "urscalar" ,
   std.rev L [V|_],
-  coq.say V,
-  coq.term->string V SS,
-  coq.say SS.
+  /* coq.say V, */
+  (get_name "default" Def, (V = app [Def|_]), (SS is "$Default$"); coq.term->string V SS).
+
 
 pred translate_ultorvalue i:term, i:goal-ctx, i:int, o:int, o:string.
 translate_ultorvalue (app L) Ctx HoleId NewHoleId SS :- 
@@ -803,13 +698,14 @@ translate_rfunc (app L) Ctx HoleId NewHoleId2 SS :-
   translate_rvalue Arg2 Ctx NewHoleId1 NewHoleId2 ArgS2,
   SS is ArgS1 ^ ".store(" ^ ArgS2 ^ ")" .
 
-translate_rfunc (app L) Ctx HoleId NewHoleId1 SS :- 
+/* такой функции она не находит: builder_stslice */
+/* translate_rfunc (app L) Ctx HoleId NewHoleId1 SS :- 
   get_name "builder_stslice" Ubuilder_stslice,
   (L = [Ubuilder_stslice|_]),
   coq.say "rfunc builder_stslice" ,
   std.rev L [ Arg1 | _ ] ,
   translate_rvalue Arg1 Ctx HoleId NewHoleId1 ArgS1,
-  SS is ArgS1 ^ ".toSlice()" .
+  SS is ArgS1 ^ ".toSlice()" . */
 
 translate_rfunc (app L) Ctx HoleId NewHoleId1 SS :- 
   get_name "_depth" Ubuilder_depth,
@@ -912,42 +808,80 @@ translate_hole T Ctx HoleId NewHoleId HoleS :-
     (NewHoleId is HoleId + 1),
     HoleS is "Hole" ^ LvlS. /* Hole.1.2.3.1 */
 
+pred translate_apply_pure  i:term, i:goal-ctx, i:int, o:int, o:string.
+translate_apply_pure (app [T|Args]) Ctx HoleId NewHoleId SS  :- 
+  get_name "Build_XUBInteger" PF,
+  std.rev Args [app [PF|_] | [URV | _] ], !,
+  translate_rvalue URV Ctx HoleId NewHoleId SS.
+translate_apply_pure X _ _ _ _ :- coq.error "translate_apply_pure: not implemented:" X.
+
+pred translate_urstate  i:term, i:goal-ctx, i:int, o:int, o:string.
+translate_urstate (app [T|Args]) Ctx HoleId HoleId ""  :- 
+  coq.say Args.
+
+pred translate_rglobal i:gref, o:string.
+translate_rglobal IT OS :-
+  (IT = const ITC),
+  std.any->string ITC IS,
+  (K is size IS),
+  (P is substring IS (K - 8) 6),
+  (P = "_right"),
+  (OS is substring IS 2 (K - 10)).
+translate_rglobal IT OS :-
+  std.any->string IT OS.
+
+
+pred translate_lglobal i:gref, o:string.
+translate_lglobal IT OS :-
+  (IT = const ITC),
+  std.any->string ITC IS,
+  (K is size IS),
+  (P is substring IS (K - 7) 5),
+  (P = "_left"),
+  (OS is substring IS 2 (K - 9)).
+translate_lglobal IT OS :-
+  std.any->string IT OS.
+
+
 pred translate_rvalue i:term, i:goal-ctx, i:int, o:int, o:string.
 translate_rvalue T Ctx HoleId NewHoleId SS  :- 
-coq.say "translate_rvalue RHole" T,
-  is_hole T,
+  is_hole T, !,
+  coq.say "translate_rvalue RHole" T,
   coq.say "RHole" ,
   translate_hole T Ctx HoleId NewHoleId SS , !.
-
 translate_rvalue T Ctx HoleId NewHoleId SS :- 
-coq.say "translate_rvalue URScalar" T,
-  get_name "URScalar" URS,
-  (T = app [URS|_]),
+  (get_name "URScalar" URS; get_name "sInjectL" URS),
+  (T = app [URS|_]), !, 
   coq.say "URScalar" ,
   translate_urscalar T Ctx HoleId NewHoleId SS. 
-
 translate_rvalue T Ctx HoleId NewHoleId SS :- 
-coq.say "translate_rvalue ULtoRValueL T=" T,
   get_name "ULtoRValueL" ULRV,
-coq.say "ULRV=" ULRV,
-  (T = app [ULRV|_]),
-  coq.say "@ULtoRValueL" , 
+  (T = app [ULRV|_]), !,
+  coq.say "translate_rvalue ULtoRValueL",
+  coq.say "ULtoRValueL" , 
   translate_ultorvalue T Ctx HoleId NewHoleId SS.
-
 translate_rvalue T Ctx HoleId NewHoleId SS :- 
-coq.say "translate_rvalue wrapURValueL" T,
   get_name "wrapURValueL" WURV,
-  (T = app [WURV|_]),
-  coq.say "wrapURValueL" ,
-  translate_wrapurvalue T Ctx HoleId NewHoleId SS.  
+  (T = app [WURV|_]), !,
+  coq.say "translate_rvalue wrapURValueL" ,
+  translate_wrapurvalue T Ctx HoleId NewHoleId SS. 
 translate_rvalue T Ctx HoleId NewHoleId SS :- 
-coq.say "translate_rvalue apply_pure" T,
   get_name "apply_pure" APP,
-  (T = app [APP|Args]),
-  std.rev Args [app [PF|_] | [URV | _] ],
-  get_name "Build_XUBInteger" PF,
-  translate_rvalue URV Ctx HoleId NewHoleId SS.
-translate_rvalue _ _ _ _ _ :- coq.error "translate_rvalue: not implemented".
+  (T = app [APP|_]), !,
+  coq.say "translate_rvalue apply_pure",
+  translate_apply_pure T Ctx HoleId NewHoleId SS.
+translate_rvalue T Ctx HoleId NewHoleId SS :- 
+  get_name "URState" URS,
+  (T = app [URS|Args]),
+  coq.say "translate_rvalue urstate",
+  translate_urstate T Ctx HoleId NewHoleId SS.
+translate_rvalue T Ctx HoleId HoleId SS  :-
+  find_ctx_var T Ctx SS.
+translate_rvalue T Ctx HoleId HoleId SS :- 
+  coq.say "translate_rvalue global",
+  (T = global TG),
+  translate_rglobal TG SS.
+translate_rvalue T _ _ _ _ :- coq.error "translate_rvalue: not implemented" T.
 
 pred translate_lvalue i:term, i:goal-ctx, i:int, o:int, o:string.
 translate_lvalue T Ctx HoleId NewHoleId SS :- 
@@ -955,6 +889,12 @@ translate_lvalue T Ctx HoleId NewHoleId SS :-
   translate_hole T Ctx HoleId NewHoleId SS.
 translate_lvalue T Ctx HoleId HoleId SS  :-
   find_ctx_var T Ctx SS.
+translate_lvalue T Ctx HoleId HoleId SS :- 
+  coq.say "translate_lvalue global",
+  (T = global TG),
+  translate_lglobal TG SS.
+translate_lvalue T Ctx HoleId HoleId SS  :-
+  coq.error "translate_lvalue: not implemented: " T.
 /* expressions */
 
 pred translate_if i:term, i:goal-ctx, i:int, o:int, o:string.
@@ -977,7 +917,7 @@ pred translate_assign i:term, i:goal-ctx, i:int, o:int, o:string.
 translate_assign (app L) Ctx HoleId NewHoleId2 SS  :-  std.rev L [RHS | [LHS | _]],
                                      translate_lvalue LHS Ctx HoleId NewHoleId LHSS, 
                                      translate_rvalue RHS Ctx NewHoleId NewHoleId2 RHSS,
-                                     SS is LHSS ^ " = " ^ RHSS. 
+                                     (RHSS = "$Default$", SS is "";  SS is LHSS ^ " = " ^ RHSS). 
 translate_assign _ _ _ _ _ :- coq.error "Error in translate_assign".
 
 pred translate_return i:term, i:goal-ctx, i:int, o:int, o:string.
@@ -990,21 +930,19 @@ pred translate_binding i:term, i:goal-ctx, i:int, o:int, o:string.
 translate_binding (app L) Ctx HoleId NewHoleId2 SS  :-  std.rev L [SB | [FB | _]],
                                      translate_expression FB Ctx HoleId NewHoleId FBS,
                                      translate_expression SB Ctx NewHoleId NewHoleId2 SBS,
-                                     SS is FBS ^ ";\n" ^ SBS.
+                                     (FBS = "", SS is "\n" ^ SBS; SS is FBS ^ ";\n" ^ SBS).
 
 pred translate_dynbinding i:term, i:goal-ctx, i:int, o:int, o:string.
-translate_dynbinding (app L) Ctx HoleId NewHoleId SS  :-  
-                 std.rev L [F | [LedgerT | _]],
-                 coq.say "F = " F,
-                 (F = fun Name Ty x \ Expr x),
-                 (pi x \ translate_expression (Expr x) [decl x Name Ty | Ctx] HoleId NewHoleId ExprS ),
-                 translate_ultype Ty TyS, 
-                 coq.name->id Name NameS,
-                 /* coq.say ExprS, */
-                 SS is TyS ^ " " ^ NameS ^ "; " ^ ExprS
-                 /* translate_expression FB Ctx HoleId NewHoleId FBS,
-                 translate_expression SB Ctx NewHoleId NewHoleId2 SBS, */
-                 /* SS is FBS ^ ";\n" ^ SBS */.    
+translate_dynbinding (app L) Ctx HoleId NewHoleId SS  :-  std.rev L [F | [LedgerT | _]],
+                                     /* coq.say "F = " F, */
+                                     (F = fun Name Ty x \ Expr x),
+                                     (pi x \ translate_expression (Expr x) [decl x Name Ty | Ctx] HoleId NewHoleId ExprS ),
+                                     translate_ultype Ty TyS, 
+                                     coq.name->id Name NameS,
+                                     SS is TyS ^ " " ^ NameS ^ "; " ^ ExprS
+                                     /* translate_expression FB Ctx HoleId NewHoleId FBS,
+                                     translate_expression SB Ctx NewHoleId NewHoleId2 SBS, */
+                                     /* SS is FBS ^ ";\n" ^ SBS */.    
 pred translate_ulexpression i:term, i:goal-ctx, i:int, o:int, o:string.
 translate_ulexpression (app L) Ctx HoleId HoleId SS :- std.rev L [Exp | [H | _]], 
                                         coq.say "Exp=" Exp,
@@ -1039,21 +977,40 @@ S is "uint256".
 translate_pure_type T S :- 
 get_name "XUInteger" T,
 S is "uint".
-
+translate_pure_type T S :- 
+get_name "cell" T,
+S is "TvmCell".
+translate_pure_type T S :- 
+get_name "builder" T,
+S is "TvmBuilder".
+translate_pure_type T S :- 
+get_name "slice" T,
+S is "TvmSlice".
 
 translate_pure_type (app [F , K , V]) S :-
   get_name "XHMap" F, 
   translate_pure_type K KS,
   translate_pure_type V VS,
   S is "mapping (" ^ KS ^ " => " ^ VS ^ ")".
-translate_pure_type _ _ :- coq.error "translate_pure_type: not implemented" T.
+translate_pure_type (app [F , K ]) S :-
+  get_name "XMaybe" F, 
+  translate_pure_type K KS,
+  S is "optional (" ^ KS ^ ")".
+translate_pure_type (app [F , X , Y ]) S :-
+  get_name "XProd" F, 
+  translate_pure_type X XS,
+  translate_pure_type Y YS,
+  S is "(" ^ XS ^ ", " ^ YS ^ ")".
+
+translate_pure_type T _ :- coq.error "translate_pure_type: not implemented" T.
+
 
 pred translate_ultype i:term, o:string.
 translate_ultype (app [ULV|Args]) S :-
 get_name "ULValueL" ULV,
 std.rev Args [T|_],
 translate_pure_type T S.
-translate_ultype _ _ :- coq.error "translate_ultype: not implemented".
+translate_ultype T _ :- coq.error "translate_ultype: not implemented" T.
 
 pred translate_func_name i:string, o:string.
 translate_func_name "@tvm_accept_left" "tvm.accept".
@@ -1079,7 +1036,6 @@ translate_func_name "@decr_pre_left"    " -- ".
 translate_func_name FS _ :- coq.error "translate_func_name: not implemeneted: " FS.
 
 
-
 pred translate_rvalue_list i:list term, i:list implicit_kind, i:goal-ctx, i:int, o:int, i:string, o:string.
 translate_rvalue_list [A | Args] [explicit | ArgL] Ctx HoleId NewHoleId2 Acc ArgSS :-
   translate_rvalue A Ctx HoleId NewHoleId ArgS,
@@ -1092,7 +1048,22 @@ translate_rvalue_list [_ | Args] [_ | ArgL] Ctx HoleId NewHoleId Acc ArgS :-
   translate_rvalue_list Args ArgL Ctx HoleId NewHoleId Acc ArgS.
 translate_rvalue_list [] [_|_] _ _ _ _ _ :- coq.error "different number of arguments".
 translate_rvalue_list [_|_] [] _ _ _ _ _ :- coq.error "different number of arguments".
+
 translate_rvalue_list [] [] _ HoleId HoleId Acc Acc :- coq.say "Acc@=" Acc.
+
+
+pred translate_lvalue_arg i:list term, i:list implicit_kind, i:goal-ctx, i:int, o:int, o:string.
+translate_lvalue_arg [A | Args] [explicit | ArgL] Ctx HoleId NewHoleId ArgS :-
+  translate_lvalue A Ctx HoleId NewHoleId ArgS,
+  coq.say "ArgS@ = " ArgS.
+
+translate_lvalue_arg [_ | Args] [_ | ArgL] Ctx HoleId NewHoleId ArgS :-
+  translate_lvalue_arg Args ArgL Ctx HoleId NewHoleId ArgS.
+
+
+
+
+
 
 pred translate_rvalue_list1 i:list term, i:list implicit_kind, i:goal-ctx, i:int, o:int, i:string, o:string, o:string.
 translate_rvalue_list1 [A | Args] [explicit | ArgL] Ctx HoleId NewHoleId2 Acc ArgS1 ArgSS :-
@@ -1111,7 +1082,7 @@ translate_rvalue_list1o2 L [explicit | ArgL] Ctx HoleId NewHoleId2 Acc ArgS1 Arg
 std.rev L [AA | [A | Args]] ,
 coq.say "A=" A,
 coq.say "AA=" AA,
-  translate_rvalue A Ctx HoleId NewHoleId ArgS1,
+  translate_lvalue A Ctx HoleId NewHoleId ArgS1,
   coq.say "ArgS1 = " ArgS1,
   translate_rvalue AA Ctx NewHoleId NewHoleId2 ArgS2, 
   coq.say "ArgS2 = " ArgS2.
@@ -1131,11 +1102,11 @@ translate_rvalue_list1o2 _ _ _ _ _ _ _ _  :- coq.error "dont first or second arg
 pred first_argum_before_funname i:string.
 first_argum_before_funname Fn :- Fn = "@tvm_transfer_left".
 
-pred first_argum_operator_second_argum i:string.
-first_argum_operator_second_argum Fn :- Fn = "@plusassign_left".
-first_argum_operator_second_argum Fn :- Fn = "@minusassign_left".
-first_argum_operator_second_argum Fn :- Fn = "@andassign_left".
-first_argum_operator_second_argum Fn :- Fn = "@orassign_left".
+pred infix_operators i:string.
+infix_operators Fn :- Fn = "@plusassign_left".
+infix_operators Fn :- Fn = "@minusassign_left".
+infix_operators Fn :- Fn = "@andassign_left".
+infix_operators Fn :- Fn = "@orassign_left".
 
 pred postfix_operators i:string.
 postfix_operators Fn :- Fn = "@incr_post_left".
@@ -1188,16 +1159,16 @@ coq.say "Args=" Args,
  (
     (
       prefix_operators FS ,
-      translate_rvalue_list Args ArgL Ctx HoleId NewHoleId "" ArgS,
+      translate_lvalue_arg Args ArgL Ctx HoleId NewHoleId ArgS,
       (ExprS is FSS ^ ArgS )  
     );
     (
       postfix_operators FS ,
-      translate_rvalue_list Args ArgL Ctx HoleId NewHoleId "" ArgS,
+      translate_lvalue_arg Args ArgL Ctx HoleId NewHoleId ArgS,
       (ExprS is ArgS ^ FSS )  
     );
     (
-      first_argum_operator_second_argum FS ,
+      infix_operators FS ,
       translate_rvalue_list1o2 Args ArgL Ctx HoleId NewHoleId "" ArgS1 ArgS2 ,
       (ExprS is ArgS1 ^ FSS ^ ArgS2)  
     );
@@ -1213,74 +1184,6 @@ coq.say "Args=" Args,
  ).
 translate_expression  T _ _ _ _  :- 
   coq.error "translate_expression: not implemented: " T.
-
-pred starts_with  i:string, i:string.
-starts_with S1 S2 :- 
-  (K1 is size S1),
-  (K2 is size S2),
-  (K1 =< K2),
-  (S21 is substring S2 0 K1),
-  /* coq.say S21, */
-  S1 = S21.
-
-pred split_string  i:string, i:string, i:string, o:list string.
-split_string Acc P S SL :-
-    starts_with P S,
-    (KS is size S),
-    (KP is size P),
-    (KS > KP), 
-    /* coq.say S KS KP, */
-    (SS is substring S KP (KS - KP)), !,
-    /* coq.say SS, */
-    split_string "" P SS SLL,
-    (/* ((Acc = ""), (SL = SLL) ); */ SL = [Acc | SLL]). 
-split_string Acc P S [Acc, ""] :-
-    not(Acc = ""),
-    starts_with P S,
-    (KS is size S),
-    (KP is size P),
-    (KS = KP).
-split_string Acc P S [""] :-
-    (Acc = ""),
-    starts_with P S,
-    (KS is size S),
-    (KP is size P),
-    (KS = KP).
-/* split_string Acc P S [] :-
-    (Acc = ""),
-    starts_with P S,
-    (KS is size S),
-    (KP is size P),
-    (KS = KP). */
-split_string Acc P "" [Acc] .
-/* split_string Acc P "" [] :-
-  Acc = "". */
-split_string Acc P S SL :-
-  (K is size S),
-  (A is substring S 0 1),
-  (B is substring S 1 (K - 1)),
-  (Acc1 is Acc ^ A),
-  split_string Acc1 P B SL.
-
-:index (_ 1)
-pred join i:string, i:list string,  o:string.
-join _ [] "".
-join _ [X] X :- !.
-join Sep [X|XS] S :- join Sep XS S0, S is X ^ Sep ^ S0.
-
-pred escape_all i:string, o:string.
-escape_all ExprS ExprSEsc3 :-
-  split_string "" "\n" ExprS SL,
-  coq.say SL,
-  join "\\\n" SL ExprSEsc1,
-
-  split_string "" "/" ExprSEsc1 SL1,
-  coq.say SL1,
-  join "\\/" SL1 ExprSEsc2,
-  
-  split_string "" "&" ExprSEsc2 SL2,
-  coq.say SL2,
-  join "\\&" SL2 ExprSEsc3.
 
 pred not-hyp i:term, i:prop, o:term.
   not-hyp X (decl Y _ Ty) Y :- not (occurs X Ty), not (X = Y).
@@ -1336,7 +1239,7 @@ solve_common Expr N _FN Footer TF Ctx OutTrm OutSSS :-
     (K is size OutS),
     ((K =< 2, OutSS is ""); OutSS is substring OutS 1 (K - 2)),
     TF Expr Ctx 0 _ ExprS,
-    ExprSS is ExprS ^ Footer,
+    (ExprS = "", ExprSS is ""; ExprSS is ExprS ^ Footer),
     OutSSS is OutSS ^ ExprSS.
 solve_common Expr N _FN _ TF Ctx OutTrm OutSSS :- 
     coq.say "translating"  N  "in hole ...",
@@ -1361,6 +1264,7 @@ idtac  G [seal G].
 Elpi Tactic bk_translate.
 
 Elpi Accumulate Db global_fields_utils.
+Elpi Accumulate Db string_utils.
 Elpi Accumulate Db bk_translate_utils.
 
 Elpi Accumulate lp:{{
@@ -1372,11 +1276,7 @@ solve (goal Ctx _ _GoalType _ [trm Expr] as G) GS :-
   get_name "URValueL"  URVL,
   ( PG =  app [URVL | _] ; PG =  app [URVP | _]), 
   !,
-  /* find_file Ctx FN,
-  coq.term->string FN FNS,
-  (K  is size FNS),
-  (FNSS is substring FNS 1 (K - 2)), */
-coq.say Expr ,
+  /* coq.say Expr , */
   solve_common Expr "URValue" _FNSS "" translate_rvalue Ctx _OutTrm OutS,
   get_name "Translation" Tr,
   coq.string->term OutS OutSTerm,
@@ -1388,11 +1288,7 @@ solve  (goal Ctx _ _GoalType _ [trm Expr] as G) GS :-
   get_name "ULValueL"  ULVL,
   ( PG =  app [ULVL | _] ; PG =  app [ULVP | _]  ), 
   !,
-  /* find_file Ctx FN,
-  coq.term->string FN FNS,
-  (K  is size FNS),
-  (FNSS is substring FNS 1 (K - 2)), */
-coq.say Expr ,
+  /* coq.say Expr , */
   solve_common Expr "ULValue" _FNSS "" translate_lvalue Ctx _OutTrm OutS,
   get_name "Translation" Tr,
   coq.string->term OutS OutSTerm,
@@ -1411,24 +1307,21 @@ coq.say "public" Pub,
 coq.say "external" Ext,
   ( PG =  app [UExp | _] ; PG = app [Pub | _] ; PG = app [Ext | _] ), 
   !,
-  /* find_file Ctx FN,
-  coq.term->string FN FNS,
-  (K is size FNS),
-  (FNSS is substring FNS 1 (K - 2)), */
-coq.say Expr ,
+  /* coq.say Expr , */
   solve_common Expr "UExpression" _FNSS "" translate_expression Ctx _OutTrm OutS,
   get_name "Translation" Tr,
   coq.string->term OutS OutSTerm,
   coq.ltac.thenl [ coq.ltac.open (clear-var "OutTranslation") , 
                    coq.ltac.open (set-var "OutTranslation" {{lp:Tr lp:OutSTerm}}) ] (seal G) GS. 
 }}.
-
+  
 Elpi Typecheck.
 
 Elpi Tactic fin.
 
 Elpi Accumulate Db global_fields_utils.
 Elpi Accumulate Db bk_translate_utils.
+Elpi Accumulate Db string_utils.
 
 Elpi Accumulate lp:{{
 
@@ -1444,11 +1337,7 @@ solve1 (goal Ctx _ GoalType _ [trm Expr] as G) GS :-
   get_name "URValueL"  URVL,
   ( PG =  app [URVL | _] ; PG =  app [URVP | _]), 
   !,
-  /* find_file Ctx FN,
-  coq.term->string FN FNS,
-  (K  is size FNS),
-  (K > 2, FNSS is substring FNS 1 (K - 2); FNSS is ""), */
-coq.say Expr ,
+  /* coq.say Expr , */
   solve_common Expr "URValue" _FNSS "" translate_rvalue Ctx _OutTrm OutS,
   get_name "Translation" Tr,
   coq.string->term OutS OutSTerm,
@@ -1460,11 +1349,7 @@ solve1  (goal Ctx _ GoalType _ [trm Expr] as G) GS :-
   get_name "ULValueL"  ULVL,
   ( PG =  app [ULVL | _] ; PG =  app [ULVP | _]  ), 
   !,
-  /* find_file Ctx FN,
-  coq.term->string FN FNS,
-  (K  is size FNS),
-  (K > 2, FNSS is substring FNS 1 (K - 2); FNSS is ""), */
-coq.say Expr ,
+  /* coq.say Expr , */
   solve_common Expr "ULValue" _FNSS "" translate_lvalue Ctx _OutTrm OutS,
   get_name "Translation" Tr,
   coq.string->term OutS OutSTerm,
@@ -1476,11 +1361,7 @@ solve1  (goal Ctx _ GoalType _ [trm Expr] as G) GS :-
   get_name "public" Pub,
   ( PG =  app [UExp | _] ; PG = app [Pub | _] ), 
   !,
-  /* find_file Ctx FN,
-  coq.term->string FN FNS,
-  (K is size FNS),
-  (K > 2, FNSS is substring FNS 1 (K - 2); FNSS is ""), */
-coq.say Expr ,
+  /* coq.say Expr , */
   solve_common Expr "UExpression" _FNSS "" translate_expression Ctx _OutTrm OutS,
   get_name "Translation" Tr,
   coq.string->term OutS OutSTerm,
@@ -1535,7 +1416,7 @@ msolve [G|GX] GS :-
   find_arg_with_nablas1 G1 Out, 
   coq.ltac.all (coq.ltac.open (clear-set "OutTranslation" Out )) GX GS,
   (Out = app [_ , OutS]),
-  if (GX = []) (coq.say "no more goals" , write_to_file G OutS ) true.
+  if (GX = []) (coq.say "no more goals" /* , write_to_file G OutS */ ) true.
 
 msolve _ _ :- coq.error "Cannot finish current goal".  
 
@@ -1543,11 +1424,46 @@ msolve _ _ :- coq.error "Cannot finish current goal".
 
 Elpi Typecheck.
 
-Elpi Query lp:{{
+About new_lvalue.
 
-coq.notation.add-abbreviation-for-tactic "fin" "fin" [].
+(* (DynamicBinding (new_lvalue b)
+             (fun x: ULValue ty => StrictBinding (AssignExpression x r) f ) ) *)
+
+
+Elpi Tactic refine_new.
+
+Elpi Accumulate Db global_fields_utils.
+Elpi Accumulate Db string_utils.
+
+Elpi Accumulate lp:{{
+
+pred fix_new i:term, o:term.
+fix_new (app [DynamicBinding|XS]) Out :-
+  get_name "DynamicBinding" DynamicBinding,
+  std.rev XS [F , NL | YS],
+  (F = fun Name Ty x \ Expr x),
+  (NL = app NLL),
+  std.rev NLL [_|NLLR],
+  coq.name->id Name NameS,
+  coq.string->term NameS NameSS,
+  std.rev [NameSS|NLLR] NLLRR,
+  (Out = app [DynamicBinding|XXS]),
+  std.map YS fix_new YYS,
+  std.rev [F , app NLLRR | YYS] XXS.
+fix_new (app [T|XS]) Out :- 
+  (Out = app [{fix_new T}|YS]),
+  std.map XS fix_new  YS.
+fix_new T T.
+
+solve  (goal _Ctx _ _GoalType _ [trm Expr] as G) GS :-
+  fix_new Expr Expr1,
+  refine Expr1 G GS.
 
 }}.
+
+Elpi Typecheck.
+
+
 
 Inductive IGoal      : Type := | Goal : Type -> IGoal.
 Inductive IHoleLevel : Set  := | HoleLevel: List.list nat -> IHoleLevel.
@@ -1558,14 +1474,15 @@ Inductive ITranslation  : Set  := | Translation: string -> ITranslation.
 Tactic Notation "begin" uconstr(s)  := ( set (PrevGoal:=Goal False);
                                          set (HLevel:=HoleLevel (List.cons 0%nat List.nil)) ;
                                          set (OutFileName:=FileName s);
-                                         set (OutTranslation:=Translation "");
-                                         elpi clear_file (s)).
+                                         set (OutTranslation:=Translation "") (* ;
+                                         elpi clear_file (s) *) ).
 
 
 Elpi Tactic PrefixTest.
 
 Elpi Accumulate Db global_fields_utils.
 Elpi Accumulate Db bk_translate_utils.
+Elpi Accumulate Db string_utils.
 
 Elpi Accumulate lp:{{
 
@@ -1577,6 +1494,8 @@ set-var N V (goal _Ctx _R _T _E _ as G) GS :-
 set-var N _ _ _ :- coq.error "Cannot set var:" N. */
 
 solve (goal _ _ _ _ [str Name] as G) GL :- 
+    attributes A,
+    coq.say A,
     (FName is Name ^ ".sol"),
     coq.string->term FName FNameS,
     coq.ltac.open (set-var "PrevGoal" {{ Goal False }}) (seal G) [G1],
@@ -1592,13 +1511,35 @@ Elpi Typecheck.
 
 Global Set UrsusPrefixTactic "PrefixTest". 
 
+
+(* Elpi Command UrsusDefined.
+
+Elpi Accumulate Db global_fields_utils.
+Elpi Accumulate Db string_utils.
+
+Elpi Accumulate lp:{{
+
+main [str F] :-
+  coq.say F,
+  get_name F FT,
+  coq.say FT,
+  attributes A,
+  coq.say A.
+
+}}.
+
+Elpi Typecheck.
+
+Global Set UrsusDefault "UrsusDefined". *)
+
+
 Tactic Notation "!" uconstr(s) := (match goal with
                                    | PrevGoal := Goal _ |- ?G => clear PrevGoal; set (PrevGoal:=Goal G)
+                                   | |- ?G=> set (PrevGoal:=Goal G)
                                    end ; refine s).
-
-
 Tactic Notation "!0" uconstr(s) := ( match goal with
                                              | PrevGoal := Goal _ |- ?G => clear PrevGoal; set (PrevGoal:=Goal G)
+                                             | |- ?G => set (PrevGoal:=Goal G)
                                              end ; 
                                      elpi bk_translate (s); 
                                      refine s).
@@ -1644,7 +1585,59 @@ Tactic Notation "!5" uconstr(s) := ( !s; [ | | | | ];
                                        | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (4%nat::L)%list)
                                        end] ). 
 
-  (* first [ #1 s | #2 s | #3 s | #4 s | #5 s ]. *)
+
+Tactic Notation "?!" uconstr(s) := (match goal with
+                                   | PrevGoal := Goal _ |- ?G => clear PrevGoal; set (PrevGoal:=Goal G)
+                                   | |- ?G=> set (PrevGoal:=Goal G)
+                                   end ; elpi refine_new (s)).
+Tactic Notation "?!0" uconstr(s) := ( match goal with
+                                             | PrevGoal := Goal _ |- ?G => clear PrevGoal; set (PrevGoal:=Goal G)
+                                             | |- ?G => set (PrevGoal:=Goal G)
+                                             end ; 
+                                     elpi bk_translate (s); 
+                                     elpi refine_new (s)).
+Tactic Notation "?!1" uconstr(s) := ( ?!s; [] ;
+                                         [ elpi bk_translate (s); 
+                                          match goal with
+                                          | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (0%nat::L)%list)
+                                          end ] ).
+Tactic Notation "?!2" uconstr(s) := ( ?!s; [|];
+                                     [ elpi bk_translate (s); match goal with
+                                       | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel  (0%nat::L)%list)
+                                       end | match goal with
+                                       | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (1%nat::L)%list)
+                                       end] ).
+Tactic Notation "?!3" uconstr(s) := ( ?!s; [ | | ];
+                                     [ elpi bk_translate (s); match goal with
+                                       | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (0%nat::L)%list)
+                                       end | match goal with
+                                       | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (1%nat::L)%list)
+                                       end | match goal with
+                                       | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (2%nat::L)%list)
+                                       end] ).    
+Tactic Notation "?!4" uconstr(s) := ( ?!s; [ | | | ];
+                                     [ elpi bk_translate (s); match goal with
+                                       | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (0%nat::L)%list)
+                                       end | match goal with
+                                       | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (1%nat::L)%list)
+                                       end | match goal with
+                                       | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (2%nat::L)%list)
+                                       end | match goal with
+                                       | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (3%nat::L)%list)
+                                       end] ).    
+Tactic Notation "?!5" uconstr(s) := ( ?!s; [ | | | | ];
+                                     [ elpi bk_translate (s); match goal with
+                                       | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (0%nat::L)%list)
+                                       end | match goal with
+                                       | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (1%nat::L)%list)
+                                       end | match goal with
+                                       | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (2%nat::L)%list)
+                                       end | match goal with
+                                       | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (3%nat::L)%list)
+                                       end | match goal with
+                                       | l:=HoleLevel ?L |- _ => clear l; set (HLevel:=HoleLevel (4%nat::L)%list)
+                                       end] ). 
+
 
 Tactic Notation "vararg" ident(x) constr(ss) := 
 let s := fresh x in 
@@ -1654,6 +1647,7 @@ refine {{ {x} := #{s} ; {_} }} ;
 clear s.
 
 Tactic Notation ":" uconstr(s)  := first [  !1 s | !2 s |  !3 s |  !4 s |  !5 s | !0 s ].
+Tactic Notation "?:" uconstr(s)  := first [  ?!1 s | ?!2 s |  ?!3 s |  ?!4 s |  ?!5 s | ?!0 s ].
 Notation " // e " := {{ {e} ; {_} }} (at level 0, e custom ULValue at level 20, only parsing).
 Notation " || e " := e (at level 0, e custom URValue at level 20,  only parsing).
 Notation " // e | " := e (at level 0, e custom ULValue at level 20,  only parsing).
@@ -1662,7 +1656,10 @@ Notation "'_'" := _ (in custom ULValue at level 0,  only parsing).
 (* Notation "e" := e (in custom URValue at level 0, e bigint). *)
 Notation "e" := e (in custom URValue at level 0, e ident,  only parsing).
 Notation "e" := e (in custom ULValue at level 0, e ident,  only parsing).
-Notation "% e" := (URScalar e) (in custom URValue at level 0, e bigint,  only parsing).
-Notation "@ e" := (URScalar e) (in custom URValue at level 0, e global,  only parsing).
+Notation "% e" := (URScalar e) (in custom URValue at level 20, e bigint,  only parsing).
+Notation "@ e" := (URScalar e) (in custom URValue at level 20, e global,  only parsing).
 (* Notation "e" := e (in custom URValue at level 0, e global). *)
 Tactic Notation "::" uconstr(s)  := (refine s).
+Tactic Notation "?::" uconstr(s)  := (elpi refine_new (s)).
+Notation " r '->' f " := (URField f r) (in custom URValue at level 2 , f global) : ursus_scope.
+Notation " r '->' f " := (ULField f r) (in custom ULValue at level 2 , f global) : ursus_scope.
