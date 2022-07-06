@@ -80,24 +80,8 @@ UseLocal Definition _ := [
      address
 ].
 
-(* Notation "'new' x ':' ty ':=' r ';' f  " := (DynamicBinding (new_lvalue _)
-             (fun x: ULValue ty => StrictBinding (AssignExpression x r) f ) )
-              (in custom ULValue at level 0, 
-              r custom URValue at level 0,
-              ty constr at level 0,       
-              f custom ULValue at level 100, (*bug in coq?!*)
-              x binder ) : ursus_scope.  
-
-Notation "'new' x ':' ty ';' f  " := (DynamicBinding (new_lvalue _)
-             (fun x: ULValue ty => StrictBinding (AssignExpression x || {} || ) f ) )
-              (in custom ULValue at level 0, 
-              ty constr at level 0,       
-              f custom ULValue at level 100, (*bug in coq?!*)
-              x binder ) : ursus_scope. *)
 
 (* ******* *)
-
-
 Definition ERR_LOW_FEE := 101.
 Definition ERR_INVALID_SENDER := 102.
 Definition ERR_EMPTY_CELL := 103.

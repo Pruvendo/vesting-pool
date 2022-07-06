@@ -160,6 +160,17 @@ Defined.
 Arguments onlyOwner  {_} {_}.
 (* ******* *)
 
+              
+Ursus Definition onPoolActivated : external PhantomType false .
+   Check || m_onbounceMap ->fetch(msg->sender)||.
+   ::// new 'entry : (  XMaybe  ( address ) ) @ "entry"  := m_onbounceMap ->fetch(msg->sender); _ |.
+   ::// if ( !{entry}->hasValue() ) then { {_:UExpression _ false} } .
+   (* TODO *)
+   (* delete m_onbounceMap[msg.sender]; ??? *)
+   ::// m_onbounceMap:= m_onbounceMap ->delete(msg->sender)|.
+
+   ://return_ {} |.
+Defined. 
 
 Notation "'new' x ':' ty ':=' r ';' f  " := (DynamicBinding (new_lvalue _)
              (fun x: ULValue ty => StrictBinding (AssignExpression x r) f ) )
@@ -175,21 +186,11 @@ Notation "'new' x ':' ty ';' f  " := (DynamicBinding (new_lvalue _)
               ty constr at level 0,       
               f custom ULValue at level 100, (*bug in coq?!*)
               x binder ) : ursus_scope.
-              
-Ursus Definition onPoolActivated : external PhantomType false .
-   Check || m_onbounceMap ->fetch(msg->sender)||.
-   ::// new 'entry : (  XMaybe  ( address ) ) @ "entry"  := m_onbounceMap ->fetch(msg->sender); _ |.
-   ::// if ( !{entry}->hasValue() ) then { {_:UExpression _ false} } .
-   (* TODO *)
-   (* delete m_onbounceMap[msg.sender]; ??? *)
-   ::// m_onbounceMap:= m_onbounceMap ->delete(msg->sender)|.
 
-   ://return_ {} |.
-Defined. 
 
 Ursus Definition onBounce (slice :  slice_): external PhantomType true .
    (* TODO *)
-   :// new 'functionId : (  uint32 ) @ "functionId"  := {} (* #{slice}->decode(uint32) *); _|.
+   ?::// new 'functionId : (  uint32 ) (* @ "functionId"  :=  #{slice}->decode(uint32) *); _|.
    (* TODO *)
    ::// if ( (!{functionId} == {} (*tvm->functionId(VestingPool)*)) ) then { {_:UExpression _ true} } .
       ::// new 'entry : (  XMaybe  ( address ) ) @ "entry"  := m_onbounceMap->fetch(msg->sender) ;_|.
@@ -216,10 +217,10 @@ Ursus Definition getCreateFee (vestingMonths :  uint8): external ( uint128) fals
 Defined. 
 
 Ursus Definition getPoolCodeHash : external ( uint256) false .
-   ::// new 'b : (  builder_ ) @ "b"  ; _ |.
+   ::// new 'b : (  builder_ ) @ "b" ; _ |.
    ::// {b}->store(address(this)) .
    (* TODO *)
-   ::// new 'code : (  cell_ ) @ "code"  := {} (*tvm->setCodeSalt(m_poolCode, !{b}->toCell())*) ; _|.
+   ::// new 'code : (  cell_ ) @ "code" (* := tvm->setCodeSalt(m_poolCode, !{b}->toCell())*) ; _|.
    ::// return_ tvm->hash(!{code})   |.
 Defined. 
 
