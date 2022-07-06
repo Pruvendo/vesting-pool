@@ -13,7 +13,6 @@ Require Import UrsusTVM.Solidity.All.
 
 
 Require Import UrsusDefinitions.
-Require Import ForReverseTranslation.
 
 Import UrsusNotations.
 Local Open Scope xlist_scope.
@@ -25,7 +24,7 @@ Local Open Scope usolidity_scope.
 
 Interfaces.
 
-MakeInterface Class IdbgPool :=
-{     unlock : (*UExpression*) external PhantomType false
+MakeInterface Class IOnPoolActivated :=
+{     onPoolActivated : external PhantomType false
 }.
 EndInterfaces.

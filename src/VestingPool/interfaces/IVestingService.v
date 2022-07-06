@@ -13,7 +13,6 @@ Require Import UrsusTVM.Solidity.All.
 
 
 Require Import UrsusDefinitions.
-Require Import ForReverseTranslation.
 
 Import UrsusNotations.
 Local Open Scope xlist_scope.
@@ -27,8 +26,8 @@ Interfaces.
 
 MakeInterface Class IVestingService :=
 {     
-    getPoolCodeHash : (*UExpression*) external ( uint256) false;
-    getCreateFee : (  uint128 ) -> (*UExpression*) external ( uint128) false;
-    createPool : (  uint128 ) -> (  uint8 ) -> (  uint8 ) -> (  address ) -> ( (*TODO Петя*)  mapping uint256 uint256(*uint256'[]*) ) -> (*UExpression*) external PhantomType false
+    getPoolCodeHash :  external ( uint256) false;
+    getCreateFee : (  uint8 ) -> external ( uint128) false;
+    createPool : (  uint128 ) -> (  uint8 ) -> (  uint8 ) -> (  address ) -> ( mapping uint256 uint256 ) -> (*UExpression*) external PhantomType true
 }.
 EndInterfaces.

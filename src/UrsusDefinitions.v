@@ -4,6 +4,8 @@ Require Import Setoid.
 Require Import ZArith.
 Require Import Coq.Program.Equality.
 Require Import Lia.
+Require Import Ascii.
+Require Import String.
 
 Require Import FinProof.Common.
 Require Import FinProof.MonadTransformers21.
@@ -26,53 +28,275 @@ Require Import UrsusTVM.Solidity.tvmFunc.
 Require Import UrsusTVM.Solidity.tvmNotations.
 Require Import UrsusTVM.Solidity.tvmCells.
 
+Require Import UMLang.LocalClassGenerator.ClassGenerator.
 Require Import UMLang.GlobalClassGenerator.ClassGenerator.
 
 Import UrsusNotations.
 Local Open Scope xlist_scope.
 Local Open Scope record.
 Local Open Scope program_scope.
-Local Open Scope glist_scope.
+(* Local Open Scope glist_scope. *)
 Local Open Scope ursus_scope.
 Local Open Scope usolidity_scope.
 
 From elpi Require Import elpi.
 
+Local Open Scope string_scope.
+
 Definition _static (T:Type): Type := T.
 Definition _defqueue (M:Type -> Type) (I: Type) : Type := M I.
 Definition _public (T:Type): Type := T.
+Inductive  _ResolveName : string -> Type := _resolve_name : forall s, _ResolveName s.
+
+Elpi Db string_utils lp:{{
+
+pred starts_with  i:string, i:string.
+starts_with S1 S2 :- 
+  (K1 is size S1),
+  (K2 is size S2),
+  (K1 =< K2),
+  (S21 is substring S2 0 K1),
+  /* coq.say S21, */
+  S1 = S21.
+
+pred split_string  i:string, i:string, i:string, o:list string.
+split_string Acc P S SL :-
+    starts_with P S,
+    (KS is size S),
+    (KP is size P),
+    (KS > KP), 
+    /* coq.say S KS KP, */
+    (SS is substring S KP (KS - KP)), !,
+    /* coq.say SS, */
+    split_string "" P SS SLL,
+    (/* ((Acc = ""), (SL = SLL) ); */ SL = [Acc | SLL]). 
+split_string Acc P S [Acc, ""] :-
+    not(Acc = ""),
+    starts_with P S,
+    (KS is size S),
+    (KP is size P),
+    (KS = KP).
+split_string Acc P S [""] :-
+    (Acc = ""),
+    starts_with P S,
+    (KS is size S),
+    (KP is size P),
+    (KS = KP).
+/* split_string Acc P S [] :-
+    (Acc = ""),
+    starts_with P S,
+    (KS is size S),
+    (KP is size P),
+    (KS = KP). */
+split_string Acc _P "" [Acc] .
+/* split_string Acc P "" [] :-
+  Acc = "". */
+split_string Acc P S SL :-
+  (K is size S),
+  (A is substring S 0 1),
+  (B is substring S 1 (K - 1)),
+  (Acc1 is Acc ^ A),
+  split_string Acc1 P B SL.
+
+:index (_ 1)
+pred join i:string, i:list string,  o:string.
+join _ [] "".
+join _ [X] X :- !.
+join Sep [X|XS] S :- join Sep XS S0, S is X ^ Sep ^ S0.
+
+
+pred char->term i:string, o:term.
+char->term "A" {{ "A"%char }}:-!.
+char->term "B" {{ "B"%char }}:-!.
+char->term "C" {{ "C"%char }}:-!.
+char->term "D" {{ "D"%char }}:-!.
+char->term "E" {{ "E"%char }}:-!.
+char->term "F" {{ "F"%char }}:-!.
+char->term "G" {{ "G"%char }}:-!.
+char->term "H" {{ "H"%char }}:-!.
+char->term "I" {{ "I"%char }}:-!.
+char->term "J" {{ "J"%char }}:-!.
+char->term "K" {{ "K"%char }}:-!.
+char->term "L" {{ "L"%char }}:-!.
+char->term "M" {{ "M"%char }}:-!.
+char->term "N" {{ "N"%char }}:-!.
+char->term "O" {{ "O"%char }}:-!.
+char->term "P" {{ "P"%char }}:-!.
+char->term "Q" {{ "Q"%char }}:-!.
+char->term "R" {{ "R"%char }}:-!.
+char->term "S" {{ "S"%char }}:-!.
+char->term "T" {{ "T"%char }}:-!.
+char->term "U" {{ "U"%char }}:-!.
+char->term "V" {{ "V"%char }}:-!.
+char->term "W" {{ "W"%char }}:-!.
+char->term "X" {{ "X"%char }}:-!.
+char->term "Y" {{ "Y"%char }}:-!.
+char->term "Z" {{ "Z"%char }}:-!.
+
+
+char->term "a" {{ "a"%char }}:-!.
+char->term "b" {{ "b"%char }}:-!.
+char->term "c" {{ "c"%char }}:-!.
+char->term "d" {{ "d"%char }}:-!.
+char->term "e" {{ "e"%char }}:-!.
+char->term "f" {{ "f"%char }}:-!.
+char->term "g" {{ "g"%char }}:-!.
+char->term "h" {{ "h"%char }}:-!.
+char->term "i" {{ "i"%char }}:-!.
+char->term "j" {{ "j"%char }}:-!.
+char->term "k" {{ "k"%char }}:-!.
+char->term "l" {{ "l"%char }}:-!.
+char->term "m" {{ "m"%char }}:-!.
+char->term "n" {{ "n"%char }}:-!.
+char->term "o" {{ "o"%char }}:-!.
+char->term "p" {{ "p"%char }}:-!.
+char->term "q" {{ "q"%char }}:-!.
+char->term "r" {{ "r"%char }}:-!.
+char->term "s" {{ "s"%char }}:-!.
+char->term "t" {{ "t"%char }}:-!.
+char->term "u" {{ "u"%char }}:-!.
+char->term "v" {{ "v"%char }}:-!.
+char->term "w" {{ "w"%char }}:-!.
+char->term "x" {{ "x"%char }}:-!.
+char->term "y" {{ "y"%char }}:-!.
+char->term "z" {{ "z"%char }}:-!.
+
+char->term " " {{ " "%char }}:-!.
+char->term "!" {{ "!"%char }}:-!.
+char->term "@" {{ "@"%char }}:-!.
+char->term "#" {{ "#"%char }}:-!.
+char->term "%" {{ "%"%char }}:-!.
+char->term "^" {{ "^"%char }}:-!.
+char->term "&" {{ "&"%char }}:-!.
+char->term "*" {{ "*"%char }}:-!.
+char->term "(" {{ "("%char }}:-!.
+char->term ")" {{ ")"%char }}:-!.
+char->term "-" {{ "-"%char }}:-!.
+char->term "_" {{ "_"%char }}:-!.
+char->term "+" {{ "+"%char }}:-!.
+char->term "{" {{ "{"%char }}:-!.
+char->term "}" {{ "}"%char }}:-!.
+char->term "\\" {{ "\"%char }}:-!.
+char->term "/" {{ "/"%char }}:-!.
+char->term "\n" {{ "
+"%char }}:-!.
+char->term "?" {{ "?"%char }}:-!.
+char->term "," {{ ","%char }}:-!.
+char->term "." {{ "."%char }}:-!.
+char->term "[" {{ "["%char }}:-!.
+char->term "]" {{ "]"%char }}:-!.
+
+char->term "'" {{ "'"%char }}:-!.
+char->term "`" {{ "`"%char }}:-!.
+char->term "~" {{ "~"%char }}:-!.
+char->term ">" {{ ">"%char }}:-!.
+char->term "<" {{ "<"%char }}:-!.
+char->term ":" {{ ":"%char }}:-!.
+char->term ";" {{ ";"%char }}:-!.
+char->term "=" {{ "="%char }}:-!.
+char->term "$" {{ "$"%char }}:-!.
+char->term "&" {{ "&"%char }}:-!.
+char->term "|" {{ "|"%char }}:-!.
+
+char->term "0" {{ "0"%char }}:-!.
+char->term "1" {{ "1"%char }}:-!.
+char->term "2" {{ "2"%char }}:-!.
+char->term "3" {{ "3"%char }}:-!.
+char->term "4" {{ "4"%char }}:-!.
+char->term "5" {{ "5"%char }}:-!.
+char->term "6" {{ "6"%char }}:-!.
+char->term "7" {{ "7"%char }}:-!.
+char->term "8" {{ "8"%char }}:-!.
+char->term "9" {{ "9"%char }}:-!.
+
+char->term _ _ :- coq.error "char not found".
+
+pred string->term i:string, o:term.
+string->term S T :- 
+  (K is size S),
+  (K = 1), !,
+  char->term S C,
+  (T = {{ String lp:C EmptyString}}).
+string->term S T :- 
+  (K is size S),
+  (Pre is substring S 0 1),
+  (Suf is substring S 1 (K - 1)),
+  (char->term Pre PreT),
+  (T = {{ String lp:PreT lp:RR}}),
+  string->term Suf RR.
+
+pred escape_all i:string, o:string.
+escape_all ExprS ExprSEsc3 :-
+  split_string "" "\n" ExprS SL,
+  coq.say SL,
+  join "\\\n" SL ExprSEsc1,
+
+  split_string "" "/" ExprSEsc1 SL1,
+  coq.say SL1,
+  join "\\/" SL1 ExprSEsc2,
+  
+  split_string "" "&" ExprSEsc2 SL2,
+  coq.say SL2,
+  join "\\&" SL2 ExprSEsc3.
+
+}}.
+
 
 Elpi Db global_fields_utils lp:{{
 pred fields->clist i:term, i:record-decl, o: list indc-decl.
 fields->clist _ end-record [ ].
 fields->clist T (field _ N _ NS) [ constructor XX (arity T) | M] :- XX is "_" ^ N, 
-                                  fields->clist T (NS _) M.
+                                   fields->clist T (NS _) M.
 fields->clist _ X _ :- coq.say "error",
                        coq.error X.
 
+pred fields->lclist i:term, i:record-decl, o: list indc-decl.
+fields->lclist _ end-record [ ].
+fields->lclist T (field _ N _ NS) [ constructor XX (arity T) | M] :- XX is /* "_" ^ */ N, 
+                                    fields->lclist T (NS _) M.
+fields->lclist _ X _ :- coq.say "error",
+                       coq.error X.                    
+
 pred fields->tlist i:term, i:record-decl, o: term.
 fields->tlist  _ end-record {{ [ ]%glist }}.
-/* fields->tlist  T (field X Y {{_public lp:A}} NS) {{ ((lp:A: Type)::lp:M)%glist  }} :-  
-                                  fields->tlist T (NS _) M.
-fields->tlist  T (field _ _ {{_static lp:A}} NS) {{ ((lp:A: Type)::lp:M)%glist  }} :-  
-                                  fields->tlist  T (NS _) M. */
+fields->tlist  T (field _ _ {{ _ResolveName lp:S}}  NS) {{ ((lp:A: Type)::lp:M)%glist  }} :- 
+                                  coq.term->string S SS,
+                                  (K is size SS),
+                                  (SSS is substring SS 1 (K - 2)),
+                                  SSN is SSS ^ "LRecord",
+                                  get_name SSN A,
+                                  fields->tlist T (NS _) M. 
 fields->tlist  T (field _ _ A NS) {{ ((lp:A: Type)::lp:M)%glist  }} :-  
                                   fields->tlist T (NS _) M. 
 fields->tlist  _ X _ :- coq.say "error",
                         coq.error X.
 
+pred fields->ltlist i:term, i:record-decl, o: term.
+fields->ltlist  _ end-record {{ [ ]%llist }}.
+fields->ltlist  T (field _ _ {{ _ResolveName lp:S}}  NS) {{ ((lp:A: Type)::lp:M)%llist  }} :- 
+                                  coq.term->string S SS,
+                                  (K is size SS),
+                                  (SSS is substring SS 1 (K - 2)),
+                                  SSN is SSS ^ "LRecord",
+                                  get_name SSN A,
+                                  fields->ltlist T (NS _) M.
+fields->ltlist  T (field _ _ A NS) {{ ((lp:A: Type)::lp:M)%llist  }} :-  
+                                  fields->ltlist T (NS _) M. 
+fields->ltlist  _ X _ :- coq.say "error",
+                         coq.error X.                        
+
 pred fields->sclist i:term, i:record-decl, o: list indc-decl.
 fields->sclist  _ end-record [ ].
 fields->sclist  T (field _ N {{_static _}} NS) [ constructor XX (arity T) | M] :- XX is "s_" ^ N, 
-                                  fields->sclist T (NS _) M.                                                                    
+                                  fields->sclist T (NS _) M.
 fields->sclist  T (field _ _ _ NS) M :- fields->sclist T (NS _) M. 
 fields->sclist  _ X _ :- coq.say "error",
                          coq.error X.
 
 pred fields->stlist i:term, i:record-decl, o: term.
-fields->stlist  _ end-record {{ [ ]%glist }}.
-fields->stlist  T (field _ _ {{_static lp:A}} NS) {{ ((lp:A: Type)::lp:M)%glist }} :-  
-                                  fields->stlist T (NS _) M.                                 
+fields->stlist  _ end-record {{ [ ]%llist }}.
+fields->stlist  T (field _ _ {{_static lp:A}} NS) {{ ((lp:A: Type)::lp:M)%llist }} :-  
+                                  fields->stlist T (NS _) M.
 fields->stlist  T (field _ _ _ NS) M :- fields->stlist T (NS _) M.
 fields->stlist  _ X _ :- coq.say "error",
                          coq.error X.
@@ -84,17 +308,31 @@ pred get_name i:string , o:term.
 
 }}.
 
-Elpi Db global_generate_record_internals lp:{{
+Elpi Db generate_record_internals lp:{{
 
-pred global_generate_record_internals i:id, i:record-decl, o:string, o:string, o:prop.
-global_generate_record_internals N FDecl NF NTL _:-
+pred generate_record_internals i:id, i:record-decl, o:string, o:string, o:prop.
+generate_record_internals N FDecl NF NTL _:-
     /* type record      id -> term -> id -> record-decl -> indt-decl. */
     NF is N ^ "Fields",
     @global! => coq.env.add-indt (inductive NF
-                                tt 
-                                (arity {{ Type }}) 
-                                (t\ {fields->clist t FDecl})) _,
+                                  tt 
+                                  (arity {{ Set }}) 
+                                  (t\ {fields->clist t FDecl})) _,
     fields->tlist _ FDecl TL,
+    std.assert-ok! (coq.elaborate-skeleton TL TY100 Body100) "Error" , 
+    NTL is N ^ "L",
+    @global! => coq.env.add-const NTL Body100 TY100 @transparent! _ 
+    . 
+
+pred local_generate_record_internals i:id, i:record-decl, o:string, o:string, o:prop.
+local_generate_record_internals N FDecl NF NTL _:-
+    /* type record      id -> term -> id -> record-decl -> indt-decl. */
+    NF is N ^ "Fields",
+    @global! => coq.env.add-indt (inductive NF
+                                  tt 
+                                  (arity {{ Set }}) 
+                                  (t\ {fields->lclist t FDecl})) _,
+    fields->ltlist _ FDecl TL,
     std.assert-ok! (coq.elaborate-skeleton TL TY100 Body100) "Error" , 
     NTL is N ^ "L",
     @global! => coq.env.add-const NTL Body100 TY100 @transparent! _ 
@@ -104,7 +342,7 @@ global_generate_record_internals N FDecl NF NTL _:-
 Elpi Command GlobalDeclareRecordInternals.
 
 Elpi Accumulate Db global_fields_utils.
-Elpi Accumulate Db global_generate_record_internals.
+Elpi Accumulate Db generate_record_internals.
 Elpi Accumulate Db global_generate_pruvendo_record.
  
 Elpi Accumulate lp:{{ 
@@ -112,21 +350,21 @@ main [ indt-decl D ] :-
     std.assert-ok! (coq.elaborate-indt-decl-skeleton D D1) "illtyped",
     D1 = record N _ _ FDecl,
 
-    global_generate_record_internals N FDecl NF NTL _,
+    generate_record_internals N FDecl NF NTL _,
     global_generate_pruvendo_record NTL NF _. 
 }}.
 
 Elpi Typecheck.
 Elpi Export GlobalDeclareRecordInternals.
  
-Elpi Db global_declare_contract_internals lp:{{
+Elpi Db declare_contract_internals lp:{{
 
-pred global_generate_static_internals i:id, i:record-decl, o:string, o:string, o:prop.
-global_generate_static_internals N FDecl NFS NTLS _:-
+pred generate_static_internals i:id, i:record-decl, o:string, o:string, o:prop.
+generate_static_internals N FDecl NFS NTLS _:-
     NFS is N ^ "VarInitFields",
      @global! => coq.env.add-indt (inductive NFS
                                 tt 
-                                (arity {{ Type }}) 
+                                (arity {{ Set }})  /* Set !!! */
                                 (t\ {fields->sclist t FDecl})) _,
     fields->stlist _ FDecl STL ,
     std.assert-ok! (coq.elaborate-skeleton STL TY200 Body200) "Error" , 
@@ -175,29 +413,30 @@ make_field N A ET UL UR _ :-
 /* ( ULState Ledger_MainState (ContractLEmbeddedType _counter) : ULValue uint256) */
 pred ursus_fields i:record-decl, i:term, i:term, i:term, o:prop.
 ursus_fields end-record _ _ _ true.
-/* ursus_fields (field _ N {{_static lp:A}} NS) ET UL UR R :- 
+ursus_fields (field _ N {{ _ResolveName lp:S}} NS) ET UL UR R:-
+                                  coq.term->string S SS,
+                                  (K is size SS),
+                                  (SSS is substring SS 1 (K - 2)),
+                                  SSN is SSS ^ "LRecord",
+                                  get_name SSN A,
                                   make_field N A ET UL UR _,
                                   ursus_fields (NS _) ET UL UR R.
-ursus_fields (field _ N {{_public lp:A}} NS) ET UL UR R :- 
-                                  make_field N A ET UL UR _,
-                                  ursus_fields (NS _) ET UL UR R. */                                  
 ursus_fields (field _ N A NS) ET UL UR R :- 
                                   make_field N A ET UL UR _,
                                   ursus_fields (NS _) ET UL UR R.
 ursus_fields X _ _ _ false :- coq.say "error",
                               coq.error X.
 
-pred global_declare_contract_internals i:argument.
-global_declare_contract_internals (indt-decl D) :- 
+pred declare_contract_internals i:argument.
+declare_contract_internals (indt-decl D) :- 
     std.assert-ok! (coq.elaborate-indt-decl-skeleton D D1) "illtyped",
     D1 = record NN _ _ FDecl,
 
-
-    global_generate_record_internals NN  FDecl NF NTL _ ,
-    global_generate_static_internals NN  FDecl NFS NTLS _ ,
+    generate_record_internals NN  FDecl NF NTL _ ,
+    generate_static_internals NN  FDecl NFS NTLS _ ,
 
     global_generate_pruvendo_record NTL NF _  ,
-    global_generate_pruvendo_record NTLS NFS _ ,
+    local_generate_pruvendo_record NTLS NFS _ ,
 
     LS is "LedgerL",
     CTLR is NTL ^ "Record",
@@ -213,7 +452,7 @@ global_declare_contract_internals (indt-decl D) :-
                                                 lp:MT : Type ; 
                                                 lp:VT : Type ; 
                                                 lp:LT : Type ; 
-                                                lp:LT : Type ] }} TY1 Body1) "Error", 
+                                                lp:LT : Type ]%glist }} TY1 Body1) "Error", 
     coq.env.add-const LS Body1 TY1 @transparent! _ , 
     coq.say LS " is added",
     /* get_name LS LGR, */
@@ -303,15 +542,15 @@ global_declare_contract_internals (indt-decl D) :-
                                                       lp:MT 
                                                       GlobalParamsLRecord 
                                                       OutgoingMessageParamsLRecord 
-                                                      lp:LLCGR }} _ Body5) "Error" , 
-    /* coq.notation.add-abbreviation "URValue" 2 Body5 ff _, */
-    @global! => coq.notation.add-notation "'URValue'"
-                    [/* pr "x" (pr none (some 0)),  pr "b" (pr none (some 0)) */]
+                                                      lp:LLCGR }} _TY5 Body5) "Error" , 
+    coq.notation.add-abbreviation "URValue" 0 Body5 ff _,
+    /* @global! => coq.notation.add-notation "'URValue'"
+                    []
                     (some "ursus_scope") 
                     (none)
                     (some 0)
                     Body5 
-                    ff _,
+                    ff _, */
     /*  (@wrapULExpressionL LedgerLRecord ContractLRecord LocalStateLRecord VMStateLRecord MessagesAndEventsLRecord GlobalParamsLRecord OutgoingMessageParamsLRecord ledgerClass _ _ _ _ ) */
     std.assert-ok! (coq.elaborate-skeleton {{ fun x => fun y => fun z => fun t => fun u =>
                                               @wrapULExpressionL 
@@ -412,14 +651,15 @@ global_declare_contract_internals (indt-decl D) :-
 Elpi Command GlobalDeclareContractInternals.
 
 Elpi Accumulate Db global_fields_utils.
-Elpi Accumulate Db global_generate_record_internals.
+Elpi Accumulate Db generate_record_internals.
+Elpi Accumulate Db local_generate_pruvendo_record.
 Elpi Accumulate Db global_generate_pruvendo_record.
-Elpi Accumulate Db global_declare_contract_internals.
+Elpi Accumulate Db declare_contract_internals.
 
 Elpi Accumulate lp:{{
 
 main [ indt-decl D ] :-
- global_declare_contract_internals (indt-decl D).
+ declare_contract_internals (indt-decl D).
 
 }}.
 
@@ -439,15 +679,15 @@ num_args (prod _ _ F) K :- num_args ( F _ ) M, K = M + 1.
 num_args _ 0.
 
 pred make_arg_str i:term , i: string,  o:string.
-make_arg_str (prod X _ F) "" Newacc :-  coq.name->id X N, 
+make_arg_str (prod X _ F) "" Newacc :-  !, coq.name->id X N, 
                                         Nacc = " " ^ N ,                      
                                         make_arg_str ( F _ )  Nacc Newacc.
-make_arg_str (prod X _ F) Acc Newacc :- coq.name->id X N,
+make_arg_str (prod X _ F) Acc Newacc :- !, coq.name->id X N,
                                         Nacc = Acc ^ " , " ^ N,                               
                                         make_arg_str ( F _ )  Nacc Newacc.
-make_arg_str _ "" Newacc :- Newacc is "( )".
-make_arg_str _ Acc Newacc :- Newacc is "(" ^ Acc ^ " )".
-make_arg_str _ _ _ :- coq.error "error".
+make_arg_str _ "" Newacc :- !, Newacc is "( )".
+make_arg_str _ Acc Newacc :- !, Newacc is "(" ^ Acc ^ " )".
+make_arg_str T In _ :- coq.error "error in make_arg_str: " T "->" In.
 
 pred add_tail i:list X, i:X, o:list X.
 add_tail [] X [X] :- !.
@@ -460,7 +700,9 @@ lrepeat _ _ _ :- coq.error "error".
 
 pred app_left_lambdas i:term , i:term, i:term , i:term, i:term , i:term, i:list((term -> term) -> term), i:list term, i:term, o:term.
 app_left_lambdas LR CT LT VT MT LLCGR [fun A AT | TL] X T R :- R = /* fun `M` {{Type}} M\ */ fun A AT a\ {app_left_lambdas LR CT LT VT MT LLCGR TL {add_tail X a} T}.
-app_left_lambdas LR CT LT VT MT LLCGR [] X {{_ _ true}} R :- R =  fun `T` _ T\ 
+app_left_lambdas LR CT LT VT MT LLCGR [] X (app [_|Args]) R :- 
+                      std.rev Args [B|_],
+                      R =  fun `T` _ T\ 
                       {{ @wrapULExpressionL lp:LR 
                                             lp:CT 
                                             lp:LT 
@@ -476,29 +718,13 @@ app_left_lambdas LR CT LT VT MT LLCGR [] X {{_ _ true}} R :- R =  fun `T` _ T\
                                                                             lp:MT 
                                                                             GlobalParamsLRecord 
                                                                             OutgoingMessageParamsLRecord 
-                                                                            lp:LLCGR lp:T true }}.
-app_left_lambdas LR CT LT VT MT LLCGR [] X {{_ _ false}} R :- R  =  fun `T` _ T\ 
-                      {{ @wrapULExpressionL lp:LR 
-                                            lp:CT 
-                                            lp:LT 
-                                            lp:VT 
-                                            lp:MT 
-                                            GlobalParamsLRecord 
-                                            OutgoingMessageParamsLRecord 
-                                            lp:LLCGR lp:T _ _ _ lp:{{app X}}: @UExpressionL 
-                                                                            lp:LR 
-                                                                            lp:CT 
-                                                                            lp:LT 
-                                                                            lp:VT 
-                                                                            lp:MT 
-                                                                            GlobalParamsLRecord 
-                                                                            OutgoingMessageParamsLRecord 
-                                                                            lp:LLCGR lp:T false }}.                      
+                                                                            lp:LLCGR lp:T lp:B }}.                      
 
 pred app_right_lambdas i:term , i:term, i:term , i:term, i:term , i:term, i:list((term -> term) -> term), i:list term, i:term, o:term.
 app_right_lambdas LR CT LT VT MT LLCGR [fun A AT | TL] X T R :- R = fun A AT a\ {app_right_lambdas LR CT LT VT MT LLCGR TL {add_tail X a} T}.
-app_right_lambdas LR CT LT VT MT LLCGR [] X {{_ lp:F true}} R :- R  =  
-                      {{@wrapURExpressionL  lp:LR 
+app_right_lambdas LR CT LT VT MT LLCGR [] X (app [_|Args]) R :- 
+                std.rev Args [B,F|_],
+                R  =  {{@wrapURExpressionL  lp:LR 
                                             lp:CT 
                                             lp:LT 
                                             lp:VT 
@@ -512,23 +738,7 @@ app_right_lambdas LR CT LT VT MT LLCGR [] X {{_ lp:F true}} R :- R  =
                                                                                   lp:MT 
                                                                                   GlobalParamsLRecord 
                                                                                   OutgoingMessageParamsLRecord 
-                                                                                  lp:LLCGR lp:F true}}.    
-app_right_lambdas LR CT LT VT MT LLCGR [] X {{_ lp:F false}} R :- R  = 
-                      {{@wrapURExpressionL  lp:LR 
-                                            lp:CT 
-                                            lp:LT 
-                                            lp:VT 
-                                            lp:MT 
-                                            GlobalParamsLRecord 
-                                            OutgoingMessageParamsLRecord 
-                                            lp:LLCGR _ _ _ lp:{{app X}}: @URValueL  lp:LR 
-                                                                                  lp:CT 
-                                                                                  lp:LT 
-                                                                                  lp:VT 
-                                                                                  lp:MT 
-                                                                                  GlobalParamsLRecord 
-                                                                                  OutgoingMessageParamsLRecord 
-                                                                                  lp:LLCGR lp:F false}}.                                        
+                                                                                  lp:LLCGR lp:F lp:B}}.                                            
 
 pred mk_lambdas i:term , i:term, i:term , i:term, i:term , i:term, 
                 i:term, 
@@ -642,6 +852,7 @@ main [ str A ] :-
     mk_lambdas     LR CT LTT VT MT LLCGR    Ty LT Lam Imps Args T  ,
     mk_left_ursus  LR CT LTT VT MT LLCGR    LT Lam AGR A Imps Args T AS _ ,
     mk_right_ursus LR CT LTT VT MT LLCGR    LT Lam AGR A Imps Args T AS _ ,
+    
     coq.say "finished". 
 }}.
 
@@ -915,6 +1126,8 @@ make_message_queue :-
    @global! => coq.TC.declare-instance DefIGR 0.
 }}.
 
+About sInjectL.
+
 
 Elpi Command MakeMessageQueues.
 
@@ -1072,8 +1285,8 @@ process_record ULV (field _ FN FT F) RR1  :- coq.say "field" FN FT,
 process_record _ end-record (_ \ []).
 
 pred process_class i:term, i:indt-decl, i:list id, o:indt-decl.
-process_class ULV (parameter PN _ _ F) PL ANewInd :- process_class ULV (F _) PL ANewInd.
-process_class ULV (record RN _ RCN F) PL (inductive RN tt (arity {{Type}}) i \ (RR i)) :-  
+process_class ULV (parameter _PN _ _ F) PL ANewInd :- process_class ULV (F _) PL ANewInd.
+process_class ULV (record RN _ _RCN F) _PL (inductive RN tt (arity {{Type}}) i \ (RR i)) :-  
                     process_record ULV F RR.                                                      
 
 main [ indt-decl A ] :- 
@@ -1179,7 +1392,7 @@ make_outgoing_interfaces AL :- coq.say AL,
   std.assert-ok! (coq.typecheck-indt-decl R) "error",
   std.assert-ok! (coq.elaborate-indt-decl-skeleton R R1) "illtyped",
   R1 = record N _ _ FDecl,
-  global_generate_record_internals N FDecl NF NTL _,
+  generate_record_internals N FDecl NF NTL _,
   global_generate_pruvendo_record NTL NF _.
 
 }}.
@@ -1187,7 +1400,7 @@ make_outgoing_interfaces AL :- coq.say AL,
 Elpi Command OutgoingInterfaces.
 
 Elpi Accumulate Db global_fields_utils.
-Elpi Accumulate Db global_generate_record_internals.
+Elpi Accumulate Db generate_record_internals.
 Elpi Accumulate Db global_generate_pruvendo_record. 
 Elpi Accumulate Db outgoing_interfaces.
 
@@ -1205,11 +1418,13 @@ Elpi Export OutgoingInterfaces.
 Elpi Command Contract.
 
 Elpi Accumulate Db global_fields_utils.
-Elpi Accumulate Db global_generate_record_internals.
+Elpi Accumulate Db generate_record_internals.
 Elpi Accumulate Db global_generate_pruvendo_record. 
+Elpi Accumulate Db local_generate_pruvendo_record.
 Elpi Accumulate Db outgoing_interfaces.
-Elpi Accumulate Db global_declare_contract_internals.
+Elpi Accumulate Db declare_contract_internals.
 Elpi Accumulate Db make_message_queue.
+Elpi Accumulate Db string_utils.
 
 Elpi Accumulate lp:{{ 
 
@@ -1223,49 +1438,120 @@ start_contract A :-
   coq.typecheck LD _ _, /* to avoid universes information incompleteness */
   coq.env.add-section-variable "LocalDefault" LD _.
 
-/* Contract Crash ;
-Sends To IGiver ICrash ; 
-Inherits Foo ;
-Record Contract := {
-  pubkey : _static (_public uint256);
-  counter: _static uint256;
-  botch0 : address }. */
+pred add_constant i:id, i:term, i:arity.
+add_constant N Bo A :-
+coq.arity->term A Ty, 
+get_name "ContractLRecord" CT,
+get_name "LedgerLRecord"  LR,
+get_name "MessagesAndEventsLRecord"  MT,
+get_name "VMStateLRecord"  VT,
+get_name "LocalStateLRecord"  LT,
+get_name "LedgerLLedgerClass" LLCGR,
+
+std.assert-ok! (coq.elaborate-skeleton {{  @sInjectL lp:LR lp:CT lp:LT lp:VT lp:MT GlobalParamsLRecord 
+                                            OutgoingMessageParamsLRecord lp:LLCGR lp:Ty lp:Bo }} TY Body) "Error" ,
+NR is N ^ "_right",                                            
+@global! => coq.env.add-const NR Body TY @transparent! _,  
+get_name NR NRT,                                           
+NN is "'" ^ N ^ "'",                                            
+@global! => coq.notation.add-notation NN 
+                    []
+                    (some "ursus_scope") 
+                    (some "URValue")
+                    (some 0)
+                    NRT 
+                    ff _ .
+
+pred add_constants i:list argument.
+add_constants [].
+add_constants [const-decl N (some Bo) Ty | Args] :-
+ add_constant N Bo Ty,
+ add_constants Args.
+
+
+pred add_record i:indt-decl.
+add_record R :-
+  std.assert-ok! (coq.elaborate-indt-decl-skeleton R R1) "illtyped",
+  R1 = record N _ _ FDecl,
+  local_generate_record_internals N FDecl NF NTL _,
+  local_generate_pruvendo_record NTL NF _.
+
+pred add_types i:list argument.
+add_types [].
+add_types [indt-decl R | Args] :-
+ add_record R,
+ add_types Args. 
 
 
 pred proceed_contract i:int, /* step */
                       i:list argument, /* All */
                       i:list argument, /* Sends */
                       i:list argument, /* Inherits */
-                      i:list argument. /* Record */
-proceed_contract 0 [str ";"|XS] _ _ _ :-  proceed_contract 1 XS [] [] [].
-proceed_contract 0 _ _ _ _ :- coq.error "Syntax error 0".
+                      i:list argument, /* Types */
+                      i:list argument, /* Constants */
+                      i:list argument. /* Contract Record */
+proceed_contract 0 [str ";"|XS] _ _ _ _ _ :- proceed_contract 1 XS [] [] [] [] [].
+proceed_contract 0 _            _ _ _ _ _ :- coq.error "Syntax error 0".
 
-proceed_contract 1 [str "Sends"|XS] _ _ _ :- proceed_contract 2 XS [] [] []. /* 2,3 - Sends */
-proceed_contract 1 [str "Inherits"|XS] _ _ _ :- proceed_contract 4 XS [] [] []. /* 4 - Inherits */
-proceed_contract 1 [R] _ _ _ :- proceed_contract 5 [] [] [] [R]. /* 5 - Record */
-proceed_contract 1 _ _ _ _ :- coq.error "Syntax error 1".
+proceed_contract 1 [str "Sends"|XS]     _ _ _ _ _ :- proceed_contract 2 XS [] [] [] [] [].  /* 2,3 - Sends */
+proceed_contract 1 [str "Inherits"|XS]  _ _ _ _ _ :- proceed_contract 4 XS [] [] [] [] [].  /* 4 - Inherits */
+proceed_contract 1 [str "Types"|XS]     _ _ _ _ _ :- proceed_contract 5 XS [] [] [] [] [].  /* 5 - Types */
+proceed_contract 1 [str "Constants"|XS] _ _ _ _ _ :- proceed_contract 6 XS [] [] [] [] [].  /* 6 - Constants */
+proceed_contract 1 [R]                  _ _ _ _ _ :- proceed_contract 7 [] [] [] [] [] [R]. /* 7 - Main Record */
+proceed_contract 1 _                    _ _ _ _ _ :- coq.error "Syntax error 1".
 
-proceed_contract 2 [str "To"|XS] _ _ _ :- proceed_contract 3 XS [] [] [].
-proceed_contract 2 _ _ _ _ :- coq.error "Syntax error 2".
+proceed_contract 2 [str "To"|XS]        _ _ _ _ _ :- proceed_contract 3 XS [] [] [] [] [].
+proceed_contract 2 _                    _ _ _ _ _ :- coq.error "Syntax error 2".
 
-proceed_contract 3 [str ";" , str "Inherits" | XS] Sends _ _ :- proceed_contract 4 XS Sends [] [].
-proceed_contract 3 [str ";" , R] Sends _ _ :- proceed_contract 5 [] Sends [] [R].
-proceed_contract 3 [str N|XS] Sends _ _ :- proceed_contract 3 XS [str N|Sends] [] [].
-proceed_contract 3 _ _ _ _:- coq.error "Syntax error 3".
+proceed_contract 3 [str ";" , str "Inherits" | XS] Sends _ _ _ _ :- proceed_contract 4 XS Sends [] [] [] [].
+proceed_contract 3 [str ";" , str "Types"    | XS] Sends _ _ _ _ :- proceed_contract 5 XS Sends [] [] [] [].
+proceed_contract 3 [str ";" , str "Constants"| XS] Sends _ _ _ _ :- proceed_contract 6 XS Sends [] [] [] [].
+proceed_contract 3 [str ";" , R]                   Sends _ _ _ _ :- proceed_contract 7 [] Sends [] [] [] [R].
+proceed_contract 3 [str N|XS]                      Sends _ _ _ _ :- proceed_contract 3 XS {add_tail Sends (str N)} [] [] [] [].
+proceed_contract 3 _                               _     _ _ _ _ :- coq.error "Syntax error 3".
 
-proceed_contract 4 [str ";" , R] Sends Inherits _ :- proceed_contract 5 [] Sends Inherits [R].
-proceed_contract 4 [str N|XS] Sends Inherits _ :- proceed_contract    4 XS Sends [str N|Inherits] [].
-proceed_contract 4 _ _ _ _:- coq.error "Syntax error 4".
+proceed_contract 4 [str ";" , str "Types"    | XS] Sends Inherits _ _ _ :- proceed_contract 5 XS Sends Inherits [] [] [].
+proceed_contract 4 [str ";" , str "Constants"| XS] Sends Inherits _ _ _ :- proceed_contract 6 XS Sends Inherits [] [] [].
+proceed_contract 4 [str ";" , R]                   Sends Inherits _ _ _ :- proceed_contract 7 [] Sends Inherits [] [] [R].
+proceed_contract 4 [str N|XS]                      Sends Inherits _ _ _ :- proceed_contract 4 XS Sends {add_tail Inherits (str N)} [] [] [].
+proceed_contract 4 _ _ _ _ _ _ :- coq.error "Syntax error 4".
 
-proceed_contract 5 [] Sends Inherits [indt-decl R] :- 
+
+proceed_contract 5 [str ";" , str "Constants"| XS] Sends Inherits Types _ _ :- proceed_contract 6 XS Sends Inherits Types     [] [].
+proceed_contract 5 [str ";" , R]                   Sends Inherits Types _ _ :- proceed_contract 7 [] Sends Inherits Types     [] [R].
+proceed_contract 5 [indt-decl R|XS]                Sends Inherits Types _ _ :- proceed_contract 5 XS Sends Inherits {add_tail Types (indt-decl R)} [] [].
+proceed_contract 5 _ _ _ _ _ _ :- coq.error "Syntax error 5".
+
+
+proceed_contract 6 [str ";" , R]      Sends Inherits Types Constants _ :- proceed_contract 7 [] Sends Inherits Types Constants [R].
+proceed_contract 6 [const-decl N (some Bo) Ty |XS]  Sends Inherits Types Constants _ :- proceed_contract 6 XS Sends Inherits Types {add_tail Constants (const-decl N (some Bo) Ty)} [].
+proceed_contract 6 _                  _     _        _     _         _ :- coq.error "Syntax error 6".
+
+proceed_contract 7 [] Sends Inherits Types Constants [indt-decl R] :- 
+    coq.say  "Types = " Types,
+    coq.say  "Constants = " Constants,
+    add_types Types,
     make_outgoing_interfaces Sends,
-    global_declare_contract_internals (indt-decl R),
-    make_message_queue.
-proceed_contract _ _ _ _ _ :- coq.error "Syntax error 5".
+    (R = record RId RTy CId RDecl),
+    add_inherited Inherits RDecl RDecl1,
+    (R1 = record RId RTy CId RDecl1),
+    declare_contract_internals (indt-decl R1),
+    make_message_queue,
+    add_constants Constants.
+proceed_contract _ _ _ _ _ _ _ :- coq.error "Syntax error 7".
+
+pred add_inherited i:list argument, i:record-decl, o:record-decl.
+add_inherited [str I|IS] R R1 :-
+  (FS is "_" ^ I ^ "_inherited"),
+  (FTS is I ^ ".ContractLRecord"),
+  get_name FTS FT,
+  (RR = field  [coercion ff, canonical tt] FS FT x \ R),
+  add_inherited IS RR R1.
+add_inherited [] R R.
 
 pred main i:list argument.
 main [str A | T] :- start_contract A ,
-                    proceed_contract 0 T [] [] [].
+                    proceed_contract 0 T [] [] [] [] [].
  
 }}.
 
@@ -1277,12 +1563,32 @@ Elpi Command UseLocal.
 Elpi Accumulate Db global_fields_utils.
 
 Elpi Accumulate lp:{{ 
-  main [str TS] :-
-    get_name "LocalStateLRecord" X,
-    get_name TS T,
-    coq.env.add-context none {{
-      LocalStateField XHMap lp:{{X}} lp:{{T}}
+
+pred add_one_local_context i:term.
+add_one_local_context T :-
+get_name "LocalStateLRecord" LSLR,
+coq.env.add-context none {{
+      LocalStateField XHMap lp:LSLR lp:T
     }} tt tt.
+
+pred add_local_context i:term.
+add_local_context {{ []%glist }}.
+add_local_context {{ []%llist }}.
+add_local_context {{ (lp:H :: lp:TL)%glist }} :-
+  add_one_local_context H,
+  add_local_context TL.
+add_local_context {{ (lp:H :: lp:TL)%llist }} :-
+  add_one_local_context H,
+  add_local_context TL.
+add_local_context T :-
+  coq.typecheck T {{Type}} _,
+  add_one_local_context T.
+add_local_context T :-  coq.error "not implemented: " T.
+
+main [const-decl _N (some Bo) _Ty] :-
+  add_local_context Bo.
+main Arg :- coq.error "Error in argument: " Arg.
+
 }}.
 
 Elpi Typecheck.
