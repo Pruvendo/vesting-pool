@@ -28,6 +28,6 @@ MakeInterface Class IVestingService :=
 {     
     getPoolCodeHash :  external ( uint256) false;
     getCreateFee : (  uint8 ) -> external ( uint128) false;
-    createPool : (  uint128 ) -> (  uint8 ) -> (  uint8 ) -> (  address ) -> ( mapping uint256 uint256 ) -> (*UExpression*) external PhantomType true
+    createPool : (  uint128 ) -> (  uint8 ) -> (  uint8 ) -> (  address ) -> ( mapping uint256 uint256 ) -> external PhantomType true
 }.
 EndInterfaces.

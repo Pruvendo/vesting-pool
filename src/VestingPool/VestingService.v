@@ -62,9 +62,9 @@ Sends To
 (* Контракты *)
 (* Inherits  Modifiers ; *)
 Constants 
-Definition (*VestingService*) ERR_INVALID_RECIPIENT : uint256 := Build_XUBInteger 203%N
-Definition (*VestingService*) ERR_NO_CLAIMERS : uint256 := Build_XUBInteger 202%N
-Definition (*VestingService*) ERR_TOO_MANY_CLAIMERS : uint256 := Build_XUBInteger 201%N
+(*Definition (*VestingService*) ERR_INVALID_RECIPIENT : uint256 := Build_XUBInteger 203%N*)
+(*Definition (*VestingService*) ERR_NO_CLAIMERS : uint256 := Build_XUBInteger 202%N*)
+(*Definition (*VestingService*) ERR_TOO_MANY_CLAIMERS : uint256 := Build_XUBInteger 201%N*)
 
 Definition (*VestLib*) MAX_CLAIMERS : uint256 := Build_XUBInteger 10%N
 Definition (*VestLib*) STORAGE_FEE : uint128 := Build_XUBInteger 1000000000(*1 ever*)
@@ -91,8 +91,6 @@ UseLocal Definition _ := [
 ].
 
 (* ******* *)
-
-
 Definition ERR_LOW_FEE := 101.
 Definition ERR_INVALID_SENDER := 102.
 Definition ERR_EMPTY_CELL := 103.
@@ -108,11 +106,11 @@ Notation " 'ERR_LOW_AMOUNT' " := (sInject ERR_LOW_AMOUNT) (in custom URValue at 
 Notation " 'ERR_LOW_BALANCE' " := (sInject ERR_LOW_BALANCE) (in custom URValue at level 0) : ursus_scope. 
 Notation " 'ERR_NOT_SELF' " := (sInject ERR_NOT_SELF) (in custom URValue at level 0) : ursus_scope. 
 
-Definition ERR_INVALID_RECIPIENT := 203%N.
-Definition ERR_NO_CLAIMERS := 202%N.
-Definition ERR_TOO_MANY_CLAIMERS := 201%N.
+Definition ERR_INVALID_RECIPIENT := 203.
 Notation " 'ERR_INVALID_RECIPIENT' " := (sInject ERR_INVALID_RECIPIENT) (in custom URValue at level 0) : ursus_scope. 
+Definition ERR_NO_CLAIMERS := 202.
 Notation " 'ERR_NO_CLAIMERS' " := (sInject ERR_NO_CLAIMERS) (in custom URValue at level 0) : ursus_scope. 
+Definition ERR_TOO_MANY_CLAIMERS := 201%N.
 Notation " 'ERR_TOO_MANY_CLAIMERS' " := (sInject ERR_TOO_MANY_CLAIMERS) (in custom URValue at level 0) : ursus_scope. 
 
 Definition senderIs (expected :  address): modifier .
@@ -122,12 +120,13 @@ unfold_mod.
 Defined. 
 Arguments senderIs _ {_} {_}.
 
-Definition minValue (val :  uint128): modifier .
-unfold_mod.
-   :://require_((msg->value >= #{val}), ERR_LOW_FEE) .
-  refine u.
+(* TODO *)
+Ursus Definition minValue (val :  uint128): public PhantomType true .
+(* unfold_mod. *)
+   :://require_((msg->value >= #{val}), ERR_LOW_FEE) |.
+  (* refine u. *)
 Defined. 
-Arguments minValue _ {_} {_}.
+(* Arguments minValue _ {_} {_}. *)
 
 Definition contractOnly : modifier .
 unfold_mod.
@@ -135,6 +134,7 @@ unfold_mod.
   refine u.
 Defined. 
 Arguments contractOnly  {_} {_}.
+
 #[local]
 Definition modifier_false := forall X b, UExpression X b -> UExpression X b .
 
@@ -145,12 +145,13 @@ unfold_mod.
 Defined. 
 Arguments accept  {_} {_}.
 
-Definition onlyOwners (keys :  XHMap  ( uint256 )( boolean )): modifier .
-unfold_mod.
-   :://require_((#{keys})->exists(msg->pubkey()), (#{100})) .
-  refine u.
+(* TODO *)
+Ursus Definition onlyOwners (keys :  XHMap  ( uint256 )( boolean )): public PhantomType true .
+(* unfold_mod. *)
+   :://require_((#{keys})->exists(msg->pubkey()), (#{100})) |.
+  (* refine u. *)
 Defined. 
-Arguments onlyOwners _ {_} {_}.
+(* Arguments onlyOwners _ {_} {_}. *)
 
 Definition onlyOwner : modifier .
 unfold_mod.
@@ -160,7 +161,7 @@ Defined.
 Arguments onlyOwner  {_} {_}.
 (* ******* *)
 
-              
+#[override]
 Ursus Definition onPoolActivated : external PhantomType false .
    Check || m_onbounceMap ->fetch(msg->sender)||.
    ::// new 'entry : (  XMaybe  ( address ) ) @ "entry"  := m_onbounceMap ->fetch(msg->sender); _ |.
@@ -172,31 +173,15 @@ Ursus Definition onPoolActivated : external PhantomType false .
    ://return_ {} |.
 Defined. 
 
-Notation "'new' x ':' ty ':=' r ';' f  " := (DynamicBinding (new_lvalue _)
-             (fun x: ULValue ty => StrictBinding (AssignExpression x r) f ) )
-              (in custom ULValue at level 0, 
-              r custom URValue at level 0,
-              ty constr at level 0,       
-              f custom ULValue at level 100, (*bug in coq?!*)
-              x binder ) : ursus_scope.  
-
-Notation "'new' x ':' ty ';' f  " := (DynamicBinding (new_lvalue _)
-             (fun x: ULValue ty => StrictBinding (AssignExpression x || {} || ) f ) )
-              (in custom ULValue at level 0, 
-              ty constr at level 0,       
-              f custom ULValue at level 100, (*bug in coq?!*)
-              x binder ) : ursus_scope.
 
 
 Ursus Definition onBounce (slice :  slice_): external PhantomType true .
    (* TODO *)
-   ?::// new 'functionId : (  uint32 ) (* @ "functionId"  :=  #{slice}->decode(uint32) *); _|.
+   ::// new 'functionId : (  uint32 )  @ "functionId" (* :=  #{slice}->decode(uint32) *); _|.
    (* TODO *)
    ::// if ( (!{functionId} == {} (*tvm->functionId(VestingPool)*)) ) then { {_:UExpression _ true} } .
       ::// new 'entry : (  XMaybe  ( address ) ) @ "entry"  := m_onbounceMap->fetch(msg->sender) ;_|.
       ::// if ( !{entry}->hasValue() ) then { {_:UExpression _ true} }  |.
-         (* TODO *)
-         (* delete m_onbounceMap[msg.sender]; ??? *)
          ::// m_onbounceMap:= m_onbounceMap ->delete(msg->sender).
          ::// new 'poolCreator : (  address ) @ "poolCreator"  := !{entry}->get() ;_|.
          ://tvm->transfer(!{poolCreator}, (β #{0}), FALSE, (β #{64}))  |.
@@ -204,18 +189,23 @@ Ursus Definition onBounce (slice :  slice_): external PhantomType true .
    ://return_ {} |.
 Defined. 
 
+(* VestLib *)
 Ursus Definition calcPoolConstructorFee (vestingMonths :  uint8): public ( uint128) false .
    :://return_ (((ι (#{vestingMonths}) * FEE_CLAIM) + CONSTRUCTOR_GAS) + STORAGE_FEE) |.
    lia.
-Defined. 
+Defined.
+
+(* VestLib *)
 Ursus Definition calcCreateGasFee (vestingMonths :  uint8): public ( uint128) false .
    :://return_ (FEE_CREATE + calcPoolConstructorFee(#{vestingMonths})) |.
 Defined. 
 
+#[override]
 Ursus Definition getCreateFee (vestingMonths :  uint8): external ( uint128) false .
    ::// return_ calcCreateGasFee(#{vestingMonths})  |.
 Defined. 
 
+#[override]
 Ursus Definition getPoolCodeHash : external ( uint256) false .
    ::// new 'b : (  builder_ ) @ "b" ; _ |.
    ::// {b}->store(address(this)) .
@@ -256,16 +246,13 @@ Defined.  *)
 
 Definition validRecipient (addr :  address): modifier .
 unfold_mod.
-   (* TODO *)
-   :://require_(( ((#{addr})->value !=  (β (#{0%N}))  ) (*&& (  ( #{addr}->wid) ==  (β (#{0%N})) *)), ERR_INVALID_RECIPIENT) .
-
+   :://require_(( (#{addr})->value !=  (β (#{0%N}))  ) && ( (#{addr})->wid)  == ( #{(0%Z)})  , ERR_INVALID_RECIPIENT ).
   refine u.
 Defined. 
 Arguments validRecipient _ {_} {_}.
 
 Definition checkMinMaxClaimers (claimers : mapping uint256 uint256): modifier .
 unfold_mod.
-Check length_.
    :://require_(((#{claimers})->length() > ( #{0})), ERR_NO_CLAIMERS) .
    :://require_(((β ((#{claimers})->length())) <= MAX_CLAIMERS), ERR_TOO_MANY_CLAIMERS) .
   refine u.
@@ -290,13 +277,13 @@ Arguments checkMinMaxClaimers _ {_} {_}.
    m_nextId++;
    m_onbounceMap[pool] = msg.sender;
          *)
-
+#[override]
 Ursus Definition createPool (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping uint256 uint256): external PhantomType true .
   refine (contractOnly  _) .
   refine (validRecipient recipient _) .
   refine (checkMinMaxClaimers claimers _) .
   (* TODO *)
-  (* refine (minValue  _) . *)
+  refine {{minValue((#{amount} + calcCreateGasFee(#{vestingMonths}))) ; {_} }} .
   ::// new 'claimersMap : (  mapping  ( uint256 )( boolean ) ) @ "claimersMap" ;_|.
   ::// for ( 'pubkey : #{claimers} ) do { {_:UExpression _ false} } .
   :://  new ( 'key : uint256 , 'value : uint256 ) @ ( "key" , "value" ) := pubkey ; _ |.  

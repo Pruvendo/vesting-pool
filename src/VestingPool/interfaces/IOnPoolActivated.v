@@ -25,6 +25,7 @@ Local Open Scope usolidity_scope.
 Interfaces.
 
 MakeInterface Class IOnPoolActivated :=
-{     onPoolActivated : external PhantomType false
+{     
+    onPoolActivated : external PhantomType false
 }.
 EndInterfaces.

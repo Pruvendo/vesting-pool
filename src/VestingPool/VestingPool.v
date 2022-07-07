@@ -1,4 +1,3 @@
-
 Require Import Coq.Program.Basics. 
 Require Import Coq.Strings.String.
 Require Import Setoid. 
@@ -56,9 +55,14 @@ Sends To
 (* Контракты *)
 (* Inherits  Modifiers ; *)
 Constants 
-Definition (*VestingPool*) CONSTRUCTOR_GAS : uint128 := Build_XUBInteger 100000000 (*0.1 ton*)
-Definition (*VestingPool*) VESTING_PERIOD : uint32 := Build_XUBInteger (30 * 86400)(*30 days*);
+(*Definition (*VestingPool*) CONSTRUCTOR_GAS : uint128 := Build_XUBInteger 100000000 (*0.1 ton*)*)
+Definition (*VestingPool*) VESTING_PERIOD : uint32 := Build_XUBInteger (30 * 86400)(*30 days*)
 
+Definition (*VestLib*) MAX_CLAIMERS : uint256 := Build_XUBInteger 10%N
+Definition (*VestLib*) STORAGE_FEE : uint128 := Build_XUBInteger 1000000000(*1 ever*)
+Definition (*VestLib*) CONSTRUCTOR_GAS : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
+Definition (*VestLib*) FEE_CREATE : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
+Definition (*VestLib*) FEE_CLAIM : uint128 := Build_XUBInteger 100000000 (*0.1 ever*);
 Record Contract := {
 
    id : _static ( uint256);
@@ -105,12 +109,13 @@ unfold_mod.
 Defined. 
 Arguments senderIs _ {_} {_}.
 
-Definition minValue (val :  uint128): modifier .
-unfold_mod.
-   :://require_((msg->value >= #{val}), ERR_LOW_FEE) .
-  refine u.
+(* TODO *)
+Ursus Definition minValue (val :  uint128): public PhantomType true .
+(* unfold_mod. *)
+   :://require_((msg->value >= #{val}), ERR_LOW_FEE) |.
+  (* refine u. *)
 Defined. 
-Arguments minValue _ {_} {_}.
+(* Arguments minValue _ {_} {_}. *)
 
 Definition contractOnly : modifier .
 unfold_mod.
@@ -118,6 +123,7 @@ unfold_mod.
   refine u.
 Defined. 
 Arguments contractOnly  {_} {_}.
+
 #[local]
 Definition modifier_false := forall X b, UExpression X b -> UExpression X b .
 
@@ -128,12 +134,13 @@ unfold_mod.
 Defined. 
 Arguments accept  {_} {_}.
 
-Definition onlyOwners (keys :  XHMap  ( uint256 )( boolean )): modifier .
-unfold_mod.
-   :://require_((#{keys})->exists(msg->pubkey()), (#{100})) .
-  refine u.
+(* TODO *)
+Ursus Definition onlyOwners (keys :  XHMap  ( uint256 )( boolean )): public PhantomType true .
+(* unfold_mod. *)
+   :://require_((#{keys})->exists(msg->pubkey()), (#{100})) |.
+  (* refine u. *)
 Defined. 
-Arguments onlyOwners _ {_} {_}.
+(* Arguments onlyOwners _ {_} {_}. *)
 
 Definition onlyOwner : modifier .
 unfold_mod.
@@ -158,6 +165,7 @@ Ursus Definition calcUnlocked : private ( uint128 #  uint32) false .
    :://return_ [ !{unlocked}, (!{vestingPeriods} * VESTING_PERIOD) ] |.
 Defined. 
 
+#[override]
 Ursus Definition get : external ( uint256 #  address #  uint32 #  address #  uint32 #  uint32 #  uint128 #  uint128 #  uint128) false .
    :://  new ( 'unlocked : uint128 , 'nothing : uint32 ) @ ( "unlocked" , "" ) := calcUnlocked( ) ; _ |.  
    ::// return_ [ [ [ [ [ [ [ [ !id , !creator], !m_createdAt], !m_recipient] , !m_cliffEnd] , !m_vestingEnd] , !m_totalAmount] , !m_remainingAmount] , !{unlocked}] |.
@@ -168,9 +176,10 @@ Ursus Definition onBounce (slice :  slice_): external PhantomType false .
    :://return_ {} |.
 Defined. 
 
+#[override]
 Ursus Definition claim (poolId :  uint256): external PhantomType true .
 (* TODO *)
-  (* refine (onlyOwners m_claimers _) . *)
+  refine {{ onlyOwners (m_claimers) ; {_} }} .
    :://require_(((#{poolId}) == id)) .
    :://  new ( 'unlocked : uint128 , 'unlockedPeriod : uint32 ) @ ( "unlocked" , "unlockedPeriod" ) := calcUnlocked( ) ; _ |.  
    :://require_((!{unlocked} > (β #{0}))) .
@@ -184,10 +193,18 @@ Ursus Definition claim (poolId :  uint256): external PhantomType true .
    ://return_ {} |.
 Defined. 
 
+
+(* VestLib *)
+Ursus Definition calcPoolConstructorFee (vestingMonths :  uint8): public ( uint128) false .
+   :://return_ (((ι (#{vestingMonths}) * FEE_CLAIM) + CONSTRUCTOR_GAS) + STORAGE_FEE) |.
+   lia.
+Defined. 
+
+
 Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )): public PhantomType true .
   refine (contractOnly  _) .
   (* TODO *)
-  (* refine (minValue  _) . *)
+  refine {{minValue( #{amount} + (* VestLib *)calcPoolConstructorFee(#{vestingMonths}))  ; {_} }} .
   (* TODO *)
    ::// new 'service : (  address ) @ "service"  := {} (*tvm->codeSalt(tvm->code())->get()->toSlice()->decode(address) *); _ |.
    :://require_((!{service} == msg->sender), ERR_INVALID_SENDER) .
