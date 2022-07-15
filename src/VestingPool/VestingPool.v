@@ -55,14 +55,20 @@ Sends To
 (* Контракты *)
 (* Inherits  Modifiers ; *)
 Constants 
-(*Definition (*VestingPool*) CONSTRUCTOR_GAS : uint128 := Build_XUBInteger 100000000 (*0.1 ton*)*)
 Definition (*VestingPool*) VESTING_PERIOD : uint32 := Build_XUBInteger (30 * 86400)(*30 days*)
-
 Definition (*VestLib*) MAX_CLAIMERS : uint256 := Build_XUBInteger 10%N
 Definition (*VestLib*) STORAGE_FEE : uint128 := Build_XUBInteger 1000000000(*1 ever*)
-Definition (*VestLib*) CONSTRUCTOR_GAS : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
+Definition (*VestLib*)(*VestingPool*) CONSTRUCTOR_GAS : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
 Definition (*VestLib*) FEE_CREATE : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
-Definition (*VestLib*) FEE_CLAIM : uint128 := Build_XUBInteger 100000000 (*0.1 ever*);
+Definition (*VestLib*) FEE_CLAIM : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
+Definition ERR_LOW_FEE : uint := 101
+Definition ERR_INVALID_SENDER : uint := 102
+Definition ERR_EMPTY_CELL : uint := 103
+Definition ERR_ADDR_ZERO : uint := 104
+Definition ERR_LOW_AMOUNT : uint := 105
+Definition ERR_LOW_BALANCE : uint := 106
+Definition ERR_NOT_SELF : uint := 107
+;
 Record Contract := {
 
    id : _static ( uint256);
@@ -83,24 +89,6 @@ UseLocal Definition _ := [
      uint32;
      address
 ].
-
-
-(* ******* *)
-Definition ERR_LOW_FEE := 101.
-Definition ERR_INVALID_SENDER := 102.
-Definition ERR_EMPTY_CELL := 103.
-Definition ERR_ADDR_ZERO := 104.
-Definition ERR_LOW_AMOUNT := 105.
-Definition ERR_LOW_BALANCE := 106.
-Definition ERR_NOT_SELF := 107.
-Notation " 'ERR_LOW_FEE' " := (sInject ERR_LOW_FEE) (in custom URValue at level 0) : ursus_scope. 
-Notation " 'ERR_INVALID_SENDER' " := (sInject ERR_INVALID_SENDER) (in custom URValue at level 0) : ursus_scope. 
-Notation " 'ERR_EMPTY_CELL' " := (sInject ERR_EMPTY_CELL) (in custom URValue at level 0) : ursus_scope. 
-Notation " 'ERR_ADDR_ZERO' " := (sInject ERR_ADDR_ZERO) (in custom URValue at level 0) : ursus_scope. 
-Notation " 'ERR_LOW_AMOUNT' " := (sInject ERR_LOW_AMOUNT) (in custom URValue at level 0) : ursus_scope. 
-Notation " 'ERR_LOW_BALANCE' " := (sInject ERR_LOW_BALANCE) (in custom URValue at level 0) : ursus_scope. 
-Notation " 'ERR_NOT_SELF' " := (sInject ERR_NOT_SELF) (in custom URValue at level 0) : ursus_scope. 
-
 
 Definition senderIs (expected :  address): modifier .
 unfold_mod.
@@ -164,7 +152,7 @@ Ursus Definition calcUnlocked : private ( uint128 #  uint32) false .
 
    :://return_ [ !{unlocked}, (!{vestingPeriods} * VESTING_PERIOD) ] |.
 Defined. 
-
+Sync.
 #[override]
 Ursus Definition get : external ( uint256 #  address #  uint32 #  address #  uint32 #  uint32 #  uint128 #  uint128 #  uint128) false .
    :://  new ( 'unlocked : uint128 , 'nothing : uint32 ) @ ( "unlocked" , "" ) := calcUnlocked( ) ; _ |.  

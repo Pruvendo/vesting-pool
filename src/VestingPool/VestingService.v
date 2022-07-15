@@ -67,15 +67,22 @@ IVestingPool ;
 (* Контракты *)
 (* Inherits  Modifiers ; *)
 Constants 
-(*Definition (*VestingService*) ERR_INVALID_RECIPIENT : uint256 := Build_XUBInteger 203%N*)
-(*Definition (*VestingService*) ERR_NO_CLAIMERS : uint256 := Build_XUBInteger 202%N*)
-(*Definition (*VestingService*) ERR_TOO_MANY_CLAIMERS : uint256 := Build_XUBInteger 201%N*)
-
 Definition (*VestLib*) MAX_CLAIMERS : uint256 := Build_XUBInteger 10%N
 Definition (*VestLib*) STORAGE_FEE : uint128 := Build_XUBInteger 1000000000(*1 ever*)
 Definition (*VestLib*) CONSTRUCTOR_GAS : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
 Definition (*VestLib*) FEE_CREATE : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
-Definition (*VestLib*) FEE_CLAIM : uint128 := Build_XUBInteger 100000000 (*0.1 ever*);
+Definition (*VestLib*) FEE_CLAIM : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
+Definition ERR_LOW_FEE :uint := 101
+Definition ERR_INVALID_SENDER :uint := 102
+Definition ERR_EMPTY_CELL :uint := 103
+Definition ERR_ADDR_ZERO :uint := 104
+Definition ERR_LOW_AMOUNT :uint := 105
+Definition ERR_LOW_BALANCE :uint := 106
+Definition ERR_NOT_SELF :uint := 107
+Definition ERR_INVALID_RECIPIENT :uint := 203
+Definition ERR_NO_CLAIMERS :uint := 202
+Definition ERR_TOO_MANY_CLAIMERS :uint := 201
+;
 
 Record Contract := {
    botch0 : _static(uint);
@@ -96,28 +103,6 @@ UseLocal Definition _ := [
 ].
 
 (* ******* *)
-Definition ERR_LOW_FEE := 101.
-Definition ERR_INVALID_SENDER := 102.
-Definition ERR_EMPTY_CELL := 103.
-Definition ERR_ADDR_ZERO := 104.
-Definition ERR_LOW_AMOUNT := 105.
-Definition ERR_LOW_BALANCE := 106.
-Definition ERR_NOT_SELF := 107.
-Notation " 'ERR_LOW_FEE' " := (sInject ERR_LOW_FEE) (in custom URValue at level 0) : ursus_scope. 
-Notation " 'ERR_INVALID_SENDER' " := (sInject ERR_INVALID_SENDER) (in custom URValue at level 0) : ursus_scope. 
-Notation " 'ERR_EMPTY_CELL' " := (sInject ERR_EMPTY_CELL) (in custom URValue at level 0) : ursus_scope. 
-Notation " 'ERR_ADDR_ZERO' " := (sInject ERR_ADDR_ZERO) (in custom URValue at level 0) : ursus_scope. 
-Notation " 'ERR_LOW_AMOUNT' " := (sInject ERR_LOW_AMOUNT) (in custom URValue at level 0) : ursus_scope. 
-Notation " 'ERR_LOW_BALANCE' " := (sInject ERR_LOW_BALANCE) (in custom URValue at level 0) : ursus_scope. 
-Notation " 'ERR_NOT_SELF' " := (sInject ERR_NOT_SELF) (in custom URValue at level 0) : ursus_scope. 
-
-Definition ERR_INVALID_RECIPIENT := 203.
-Notation " 'ERR_INVALID_RECIPIENT' " := (sInject ERR_INVALID_RECIPIENT) (in custom URValue at level 0) : ursus_scope. 
-Definition ERR_NO_CLAIMERS := 202.
-Notation " 'ERR_NO_CLAIMERS' " := (sInject ERR_NO_CLAIMERS) (in custom URValue at level 0) : ursus_scope. 
-Definition ERR_TOO_MANY_CLAIMERS := 201%N.
-Notation " 'ERR_TOO_MANY_CLAIMERS' " := (sInject ERR_TOO_MANY_CLAIMERS) (in custom URValue at level 0) : ursus_scope. 
-
 Definition senderIs (expected :  address): modifier .
 unfold_mod.
    :://require_((msg->sender == #{expected}),  ERR_INVALID_SENDER) .
