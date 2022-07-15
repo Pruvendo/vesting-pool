@@ -27,6 +27,7 @@ Interfaces.
 MakeInterface Class IVestingPool :=
 {     
     get : external ( uint256 #  address #  uint32 #  address #  uint32 #  uint32 #  uint128 #  uint128 #  uint128) false;
-    claim : uint256 -> external PhantomType true
+    claim : uint256 -> external PhantomType true;
+    constructor : uint128 ->  uint8 -> uint8 -> address ->  ( XHMap  ( uint256 )( boolean )) -> public PhantomType true 
 }.
 EndInterfaces.

@@ -237,11 +237,3 @@ Defined.
 
 EndContract Implements (*интерфейсы*) IVestingPool.
 End VestingPoolContract.
-Import VestingPoolContract.
-Notation " 'new' lm 'with' d '(' amount ',' cliffMonths ',' vestingMonths ',' recipient ',' claimersMap ')' " := 
-   (tvm_newContract_right lm d (constructor_right amount cliffMonths vestingMonths recipient claimersMap) )
-(in custom URValue at level 0 (* , lm custom ULValue at level 0 *), d custom URValue at level 0 ) : ursus_scope .
-Notation " 'new' lm 'with' d '(' amount ',' cliffMonths ',' vestingMonths ',' recipient ',' claimersMap ')' " := 
-   (tvm_newContract_left lm d (constructor_right amount cliffMonths vestingMonths recipient claimersMap) )
-   (in custom ULValue at level 0 , lm custom ULValue at level 0, d custom URValue at level 0 ) : ursus_scope .
-   

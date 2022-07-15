@@ -50,15 +50,17 @@ From elpi Require Import elpi.
 Local Open Scope struct_scope.
 Local Open Scope N_scope.
 Local Open Scope string_scope.
-Require Import VestingPool.interfaces.IVestingService. (*interface*)
+Require Import VestingPool.interfaces.IVestingService.
+Require Import VestingPool.interfaces.IVestingPool. (*interface*)
 Require Import VestingPool.VestingPool. (*contract*)
+
 Require Import VestingPool.Modifiers. (*contract*)
 Require Import VestingPool.VestLib. (*library*)
 
 Module VestingServiceContract.
 Contract VestingService ;
 Sends To 
-    (*VestingPool*) ; 
+IVestingPool ; 
 (* Контракты *)
 (* Inherits  Modifiers ; *)
 Constants 
@@ -184,7 +186,7 @@ Ursus Definition onBounce (slice :  slice_): external PhantomType true .
       ::// if ( !{entry}->hasValue() ) then { {_:UExpression _ true} }  |.
          ::// m_onbounceMap:= m_onbounceMap ->delete(msg->sender).
          ::// new 'poolCreator : (  address ) @ "poolCreator"  := !{entry}->get() ;_|.
-         ://tvm->transfer(!{poolCreator}, (β #{0}), FALSE, (β #{64}))  |.
+         :://tvm->transfer(!{poolCreator}, (β #{0}), FALSE, (β #{64}))  |.
 
    ://return_ {} |.
 Defined. 
@@ -199,6 +201,7 @@ Defined.
 Ursus Definition calcCreateGasFee (vestingMonths :  uint8): public ( uint128) false .
    :://return_ (FEE_CREATE + calcPoolConstructorFee(#{vestingMonths})) |.
 Defined. 
+Sync.
 
 #[override]
 Ursus Definition getCreateFee (vestingMonths :  uint8): external ( uint128) false .
@@ -216,7 +219,8 @@ Defined.
 
 (* TODO *)
 (* Not Yet Implemented: HOAS universe polymorphism    *)
-(* Ursus Definition buildPoolImage (creator :  address) (id :  uint256): private ( cell_) false .
+(* 
+Ursus Definition buildPoolImage (creator :  address) (id :  uint256): private ( cell_) false .
    ::// new 'b : (  builder_ ) @ "b"  ;_|.
    ::// {b}->store(address(this)) .
    (* TODO *)
@@ -231,9 +235,8 @@ Defined.
             $] ) ; _ |.
    ::// return_  {} (*tvm->buildStateInit (!code, !dataCell)*)|.
    
-    
-   
-Defined.  *)
+Fail Defined. *) 
+
 (*
    return tvm.buildStateInit({
             code: code,
@@ -259,24 +262,26 @@ unfold_mod.
 Defined. 
 Arguments checkMinMaxClaimers _ {_} {_}.
 
-
-
-
-
+Notation " 'new' lm 'with' d '(' amount ',' cliffMonths ',' vestingMonths ',' recipient ',' claimersMap ')' " := 
+   (tvm_newContract_right lm d (IVestingPool_constructor_right amount cliffMonths vestingMonths recipient claimersMap) )
+(in custom URValue at level 0 (* , lm custom ULValue at level 0 *), d custom URValue at level 0 ) : ursus_scope .
+Notation " 'new' lm 'with' d '(' amount ',' cliffMonths ',' vestingMonths ',' recipient ',' claimersMap ')' " := 
+   (tvm_newContract_left lm d (IVestingPool_constructor_right amount cliffMonths vestingMonths recipient claimersMap) )
+   (in custom ULValue at level 0 , lm custom ULValue at level 0, d custom URValue at level 0 ) : ursus_scope .
 (* 
-   mapping(uint256 => bool) claimersMap;
-   for(uint256 pubkey: claimers) {
-      claimersMap[pubkey] = true;
-   }
-   address pool = new VestingPool{
-      value: 0,
-      flag: 64,
-      bounce: true,
-      stateInit: buildPoolImage(msg.sender, m_nextId)
-   }(amount, cliffMonths, vestingMonths, recipient, claimersMap);
-   m_nextId++;
-   m_onbounceMap[pool] = msg.sender;
-         *)
+mapping(uint256 => bool) claimersMap;
+for(uint256 pubkey: claimers) {
+   claimersMap[pubkey] = true;
+}
+address pool = new VestingPool{
+   value: 0,
+   flag: 64,
+   bounce: true,
+   stateInit: buildPoolImage(msg.sender, m_nextId)
+}(amount, cliffMonths, vestingMonths, recipient, claimersMap);
+m_nextId++;
+m_onbounceMap[pool] = msg.sender;
+      *)
 #[override]
 Ursus Definition createPool (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping uint256 uint256): external PhantomType true .
   refine (contractOnly  _) .
@@ -288,19 +293,17 @@ Ursus Definition createPool (amount :  uint128) (cliffMonths :  uint8) (vestingM
   ::// for ( 'pubkey : #{claimers} ) do { {_:UExpression _ false} } .
   :://  new ( 'key : uint256 , 'value : uint256 ) @ ( "key" , "value" ) := pubkey ; _ |.  
   ::// {claimersMap} := !{claimersMap} ->set (!{value}, TRUE)|.
-  (* TODO *)
-  (* ::// new 'pool : (  address ) @ "pool"  := new  {_}(*|{ VestingPoolPtr }|*)
+  ::// new 'pool : (  address ) @ "pool"  := new |{ IVestingPoolPtr }|
          with 
       [$ 
-        (β #{0}) ⇒ { Message_ι_value};
-        (β #{64}) ⇒ { Message_ι_flag};
-        TRUE ⇒ { Message_ι_bounce};
-        buildPoolImage(msg->sender, m_nextId) ⇒ {stateInit}
+        (β #{0}) ⇒ { DeployInit_ι_value};
+        (β #{64}) ⇒ { DeployInit_ι_flag};
+        TRUE ⇒ { DeployInit_ι_bounce}; 
+        (*buildPoolImage(msg->sender, m_nextId)*) {} ⇒ {DeployInit_ι_stateInit}
       $]
-        (#{amount}, #{cliffMonths}, #{vestingMonths}, #{recipient}, !{claimersMap}) . *)
+        (#{amount}, #{cliffMonths}, #{vestingMonths}, #{recipient}, !{claimersMap}) ; _|.
    ::// m_nextId ++ .
-   
-   ::// m_onbounceMap:= m_onbounceMap ->set ({}(*!{pool}*), msg->sender).
+   ::// m_onbounceMap:= m_onbounceMap ->set (!{pool}, msg->sender).
    ://return_ {} |.
 Defined. 
 
