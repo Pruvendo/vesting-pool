@@ -57,6 +57,9 @@ Require Import VestingPool.VestingPool. (*contract*)
 Require Import VestingPool.Modifiers. (*contract*)
 Require Import VestingPool.VestLib. (*library*)
 
+
+
+
 Module VestingServiceContract.
 Contract VestingService ;
 Sends To 
@@ -196,7 +199,7 @@ Ursus Definition calcPoolConstructorFee (vestingMonths :  uint8): public ( uint1
    :://return_ (((ι (#{vestingMonths}) * FEE_CLAIM) + CONSTRUCTOR_GAS) + STORAGE_FEE) |.
    lia.
 Defined.
-
+Sync.
 (* VestLib *)
 Ursus Definition calcCreateGasFee (vestingMonths :  uint8): public ( uint128) false .
    :://return_ (FEE_CREATE + calcPoolConstructorFee(#{vestingMonths})) |.
@@ -219,7 +222,8 @@ Defined.
 
 (* TODO *)
 (* Not Yet Implemented: HOAS universe polymorphism    *)
-(* 
+(* *) 
+Set UrsusDefault "Empty".
 Ursus Definition buildPoolImage (creator :  address) (id :  uint256): private ( cell_) false .
    ::// new 'b : (  builder_ ) @ "b"  ;_|.
    ::// {b}->store(address(this)) .
@@ -228,22 +232,20 @@ Ursus Definition buildPoolImage (creator :  address) (id :  uint256): private ( 
    
    ::// new 'dataCell : cell @ "dataCell" := 
       tvm->buildDataInit ( [$ 
-         (* #{code} ⇒ {DataInitInit_ι_contr}; *)
-         {} ⇒ {DataInitInit_ι_contr} ;
+          (#{"VestingPool"}) ⇒ {DataInitInit_ι_contr} ;
          [$ (#{id}) ⇒ {VestingPoolContract.s_id} ; (#{creator}) ⇒ {VestingPoolContract.s_creator} $] 
             ⇒ {DataInitInit_ι_varInit} 
             $] ) ; _ |.
-   ::// return_  {} (*tvm->buildStateInit (!code, !dataCell)*)|.
-   
-Fail Defined. *) 
-
+   ::// return_  tvm->buildStateInit (!code, !dataCell)|.
+Defined. 
+Set UrsusDefault "MakeUrsusDefinitions".
 (*
    return tvm.buildStateInit({
             code: code,
             varInit: {id: id, creator: creator},
             contr: VestingPool
         }); 
-    *)
+*)
 
 
 

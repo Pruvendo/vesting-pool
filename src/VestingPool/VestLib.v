@@ -71,6 +71,5 @@ Defined.
 Ursus Definition calcCreateGasFee (vestingMonths :  uint8): public ( uint128) false .
    :://return_ (FEE_CREATE + calcPoolConstructorFee(#{vestingMonths})) |.
 Defined. 
-Check || calcCreateGasFee({_}) ||.
 EndContract Implements (*интерфейсы*) .
 End VestLib.
