@@ -202,7 +202,7 @@ Defined.
 
 
 Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )): public PhantomType true .
-  refine (contractOnly  _) .
+  :: (contractOnly  _) .
   (* TODO *)
   refine {{minValue( #{amount} + (* VestLib *)calcPoolConstructorFee(#{vestingMonths}))  ; {_} }} .
   (* TODO *)

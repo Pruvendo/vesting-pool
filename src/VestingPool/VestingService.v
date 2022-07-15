@@ -286,9 +286,9 @@ m_onbounceMap[pool] = msg.sender;
       *)
 #[override]
 Ursus Definition createPool (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping uint256 uint256): external PhantomType true .
-  refine (contractOnly  _) .
-  refine (validRecipient recipient _) .
-  refine (checkMinMaxClaimers claimers _) .
+  :: (contractOnly  _) .
+  :: (validRecipient recipient _) .
+  :: (checkMinMaxClaimers claimers _) .
   (* TODO *)
   refine {{minValue((#{amount} + calcCreateGasFee(#{vestingMonths}))) ; {_} }} .
   ::// new 'claimersMap : (  mapping  ( uint256 )( boolean ) ) @ "claimersMap" ;_|.
@@ -306,12 +306,12 @@ Ursus Definition createPool (amount :  uint128) (cliffMonths :  uint8) (vestingM
         (#{amount}, #{cliffMonths}, #{vestingMonths}, #{recipient}, !{claimersMap}) ; _|.
    ::// m_nextId ++ .
    ::// m_onbounceMap:= m_onbounceMap ->set (!{pool}, msg->sender).
-   ://return_ {} |.
+   :://return_ {} |.
 Defined. 
 
 Ursus Definition constructor (poolImage :  cell_): public PhantomType true .
-  refine (onlyOwner  _) .
-  refine (accept  _) .
+  :: (onlyOwner  _) .
+  :: (accept  _) .
   (* TODO *)
    :://m_poolCode := {} (* #{poolImage}->toSlice()->loadRef() *) .
    :://m_nextId := (β #{1}) .
