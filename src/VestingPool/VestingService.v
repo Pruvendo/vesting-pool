@@ -195,7 +195,7 @@ Sync.
 Ursus Definition getCreateFee (vestingMonths :  uint8): external ( uint128) false .
    ::// return_ calcCreateGasFee(#{vestingMonths})  |.
 Defined. 
-
+Print getCreateFee_right.
 #[override]
 Ursus Definition getPoolCodeHash : external ( uint256) false .
    ::// new 'b : (  builder_ ) @ "b" ; _ |.
@@ -204,7 +204,7 @@ Ursus Definition getPoolCodeHash : external ( uint256) false .
    ::// new 'code : (  cell_ ) @ "code" (* := tvm->setCodeSalt(m_poolCode, !{b}->toCell())*) ; _|.
    ::// return_ tvm->hash(!{code})   |.
 Defined. 
-
+Print getPoolCodeHash_right.
 (* TODO *)
 (* Not Yet Implemented: HOAS universe polymorphism    *)
 (* *) 
@@ -231,6 +231,20 @@ Set UrsusDefault "MakeUrsusDefinitions".
             contr: VestingPool
         }); 
 *)
+
+Definition buildPoolImage_right {b0 b1}
+(creator: URValue  address  b0 ) 
+(id: URValue  uint256  b1 ) : URValue ( cell_ ) (orb b1 b0) :=
+wrapURExpression (cell_) (orb (orb false b1 ) b0 ) (_ )
+(ursus_call_with_args (orb (orb false b1 ) b0 )
+ (address ->  uint256 -> UExpressionP uint optional tuple mapping cell_ false) λ2 buildPoolImage creator id).
+Notation " 'buildPoolImage' '(' creator ',' id ')' " := 
+(buildPoolImage_right creator id)  
+(in custom URValue at level 0 , 
+creator custom URValue at level 0, 
+id custom URValue at level 0) : ursus_scope.
+
+
 
 
 
@@ -286,7 +300,7 @@ Ursus Definition createPool (amount :  uint128) (cliffMonths :  uint8) (vestingM
         (β #{0}) ⇒ { DeployInit_ι_value};
         (β #{64}) ⇒ { DeployInit_ι_flag};
         TRUE ⇒ { DeployInit_ι_bounce}; 
-        (*buildPoolImage(msg->sender, m_nextId)*) {} ⇒ {DeployInit_ι_stateInit}
+        buildPoolImage(msg->sender, m_nextId) ⇒ {DeployInit_ι_stateInit}
       $]
         (#{amount}, #{cliffMonths}, #{vestingMonths}, #{recipient}, !{claimersMap}) ; _|.
    ::// m_nextId ++ .
