@@ -115,7 +115,8 @@ Ursus Definition minValue (val :  uint128): public PhantomType true .
 (* unfold_mod. *)
    :://require_((msg->value >= #{val}), ERR_LOW_FEE) |.
   (* refine u. *)
-Defined. 
+Defined.
+Sync. 
 (* Arguments minValue _ {_} {_}. *)
 
 Definition contractOnly : modifier .
@@ -140,7 +141,8 @@ Ursus Definition onlyOwners (keys :  XHMap  ( uint256 )( boolean )): public Phan
 (* unfold_mod. *)
    :://require_((#{keys})->exists(msg->pubkey()), (#{100})) |.
   (* refine u. *)
-Defined. 
+Defined.
+Sync. 
 (* Arguments onlyOwners _ {_} {_}. *)
 
 Definition onlyOwner : modifier .
@@ -153,7 +155,6 @@ Arguments onlyOwner  {_} {_}.
 
 #[override]
 Ursus Definition onPoolActivated : external PhantomType false .
-   Check || m_onbounceMap ->fetch(msg->sender)||.
    ::// new 'entry : (  XMaybe  ( address ) ) @ "entry"  := m_onbounceMap ->fetch(msg->sender); _ |.
    ::// if ( !{entry}->hasValue() ) then { {_:UExpression _ false} } .
    (* TODO *)
@@ -161,7 +162,8 @@ Ursus Definition onPoolActivated : external PhantomType false .
    ::// m_onbounceMap:= m_onbounceMap ->delete(msg->sender)|.
 
    ://return_ {} |.
-Defined. 
+Defined.
+Sync. 
 
 
 
@@ -177,7 +179,8 @@ Ursus Definition onBounce (slice :  slice_): external PhantomType true .
          :://tvm->transfer(!{poolCreator}, (β #{0}), FALSE, (β #{64}))  |.
 
    ://return_ {} |.
-Defined. 
+Defined.
+Sync. 
 
 (* VestLib *)
 Ursus Definition calcPoolConstructorFee (vestingMonths :  uint8): public ( uint128) false .
@@ -194,8 +197,9 @@ Sync.
 #[override]
 Ursus Definition getCreateFee (vestingMonths :  uint8): external ( uint128) false .
    ::// return_ calcCreateGasFee(#{vestingMonths})  |.
-Defined. 
-Print getCreateFee_right.
+Defined.
+Sync. 
+
 #[override]
 Ursus Definition getPoolCodeHash : external ( uint256) false .
    ::// new 'b : (  builder_ ) @ "b" ; _ |.
@@ -203,11 +207,11 @@ Ursus Definition getPoolCodeHash : external ( uint256) false .
    (* TODO *)
    ::// new 'code : (  cell_ ) @ "code" (* := tvm->setCodeSalt(m_poolCode, !{b}->toCell())*) ; _|.
    ::// return_ tvm->hash(!{code})   |.
-Defined. 
-Print getPoolCodeHash_right.
+Defined.
+Sync. 
+
 (* TODO *)
 (* Not Yet Implemented: HOAS universe polymorphism    *)
-(* *) 
 Set UrsusDefault "Empty".
 Ursus Definition buildPoolImage (creator :  address) (id :  uint256): private ( cell_) false .
    ::// new 'b : (  builder_ ) @ "b"  ;_|.
@@ -222,7 +226,8 @@ Ursus Definition buildPoolImage (creator :  address) (id :  uint256): private ( 
             ⇒ {DataInitInit_ι_varInit} 
             $] ) ; _ |.
    ::// return_  tvm->buildStateInit (!code, !dataCell)|.
-Defined. 
+Defined.
+Sync. 
 Set UrsusDefault "MakeUrsusDefinitions".
 (*
    return tvm.buildStateInit({
@@ -243,9 +248,6 @@ Notation " 'buildPoolImage' '(' creator ',' id ')' " :=
 (in custom URValue at level 0 , 
 creator custom URValue at level 0, 
 id custom URValue at level 0) : ursus_scope.
-
-
-
 
 
 Definition validRecipient (addr :  address): modifier .
@@ -306,7 +308,8 @@ Ursus Definition createPool (amount :  uint128) (cliffMonths :  uint8) (vestingM
    ::// m_nextId ++ .
    ::// m_onbounceMap:= m_onbounceMap ->set (!{pool}, msg->sender).
    :://return_ {} |.
-Defined. 
+Defined.
+Sync. 
 
 Ursus Definition constructor (poolImage :  cell_): public PhantomType true .
   :: (onlyOwner  _) .
@@ -315,6 +318,7 @@ Ursus Definition constructor (poolImage :  cell_): public PhantomType true .
    :://m_poolCode := {} (* #{poolImage}->toSlice()->loadRef() *) .
    :://m_nextId := (β #{1}) .
    :://return_ {} |.
-Defined. 
+Defined.
+Sync. 
 EndContract Implements (*интерфейсы*) IVestingService.
 End VestingServiceContract.

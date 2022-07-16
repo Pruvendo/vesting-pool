@@ -50,7 +50,6 @@ Module VestingPoolContract.
 Opaque address.
 Contract VestingPool ;
 Sends To 
-    
     IOnPoolActivated (*interface*)  ; 
 (* Контракты *)
 (* Inherits  Modifiers ; *)
@@ -102,7 +101,8 @@ Ursus Definition minValue (val :  uint128): public PhantomType true .
 (* unfold_mod. *)
    :://require_((msg->value >= #{val}), ERR_LOW_FEE) |.
   (* refine u. *)
-Defined. 
+Defined.
+Sync. 
 (* Arguments minValue _ {_} {_}. *)
 
 Definition contractOnly : modifier .
@@ -127,7 +127,8 @@ Ursus Definition onlyOwners (keys :  XHMap  ( uint256 )( boolean )): public Phan
 (* unfold_mod. *)
    :://require_((#{keys})->exists(msg->pubkey()), (#{100})) |.
   (* refine u. *)
-Defined. 
+Defined.
+Sync. 
 (* Arguments onlyOwners _ {_} {_}. *)
 
 Definition onlyOwner : modifier .
@@ -151,18 +152,20 @@ Ursus Definition calcUnlocked : private ( uint128 #  uint32) false .
    lia.
 
    :://return_ [ !{unlocked}, (!{vestingPeriods} * VESTING_PERIOD) ] |.
-Defined. 
+Defined.
 Sync.
 #[override]
 Ursus Definition get : external ( uint256 #  address #  uint32 #  address #  uint32 #  uint32 #  uint128 #  uint128 #  uint128) false .
    :://  new ( 'unlocked : uint128 , 'nothing : uint32 ) @ ( "unlocked" , "" ) := calcUnlocked( ) ; _ |.  
    ::// return_ [ [ [ [ [ [ [ [ !id , !creator], !m_createdAt], !m_recipient] , !m_cliffEnd] , !m_vestingEnd] , !m_totalAmount] , !m_remainingAmount] , !{unlocked}] |.
-Defined. 
+Defined.
+Sync. 
 
 Ursus Definition onBounce (slice :  slice_): external PhantomType false .
    :://tvm->transfer(creator, (β #{0}), FALSE, (β #{64})) .
    :://return_ {} |.
-Defined. 
+Defined.
+Sync. 
 
 #[override]
 Ursus Definition claim (poolId :  uint256): external PhantomType true .
@@ -179,14 +182,16 @@ Ursus Definition claim (poolId :  uint256): external PhantomType true .
    :://selfdestruct(creator)  |.
 
    ://return_ {} |.
-Defined. 
+Defined.
+Sync. 
 
 
 (* VestLib *)
 Ursus Definition calcPoolConstructorFee (vestingMonths :  uint8): public ( uint128) false .
    :://return_ (((ι (#{vestingMonths}) * FEE_CLAIM) + CONSTRUCTOR_GAS) + STORAGE_FEE) |.
    lia.
-Defined. 
+Defined.
+Sync. 
 
 
 Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )): public PhantomType true .
@@ -221,7 +226,8 @@ Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vesting
                (β #{0}) ⇒ { Message_ι_flag}
          $].
    ://return_ {} |.
-Defined. 
+Defined.
+Sync. 
 
 EndContract Implements (*интерфейсы*) IVestingPool.
 End VestingPoolContract.
