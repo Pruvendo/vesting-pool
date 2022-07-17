@@ -267,6 +267,22 @@ Defined.
 (* Check (EmptyMessage IDefault (Build_XUBInteger 0, (false, Build_XUBInteger 64))).
 Print isMessageSent.
  *)
+(*To prevent incorrect usage of the pool it can  transfer only once per time-slot after the first call. The  rest of calls to transfer within a time are rejected.  *)
+(* TODO l' = l' with now' *)
+Axiom GVS_13 : forall l l' _now _now' _VESTING_PERIOD _vestingFrom n (poolId : uint256),
+l' = exec_state (Uinterpreter (claim poolId)) l ->
+isError (eval_state (Uinterpreter (claim poolId)) l) = false ->
+_now = toValue (eval_state (sRReader || (now) || ) l) ->
+_now' = toValue (eval_state (sRReader || (now) || ) l') ->
+_VESTING_PERIOD = toValue (eval_state (sRReader || VESTING_PERIOD || ) l) ->
+_vestingFrom = toValue (eval_state (sRReader || m_vestingFrom || ) l) ->
+(uint2N _now > uint2N _vestingFrom + n* uint2N _VESTING_PERIOD) ->
+(uint2N _now < uint2N _vestingFrom + (n+1)* uint2N _VESTING_PERIOD) ->
+(uint2N _now' > uint2N _vestingFrom + n* uint2N _VESTING_PERIOD) ->
+(uint2N _now' < uint2N _vestingFrom + (n+1)* uint2N _VESTING_PERIOD) ->
+(uint2N _now <= uint2N _now') ->
+isError (eval_state (Uinterpreter (claim poolId)) l') = true.
+
 (*Only claimers can claim *) 
 Axiom GVS_14 : forall l _msgSender _claimers (poolId : uint256),
 _msgSender = toValue (eval_state (sRReader || msg->pubkey() || ) l)  ->
