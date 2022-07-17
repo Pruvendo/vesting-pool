@@ -185,6 +185,100 @@ Ursus Definition claim (poolId :  uint256): external PhantomType true .
 Defined.
 Sync. 
 
+Require Import UMLang.UrsusLib.
+Require Import UMLang.ExecGenerator.
+Require Import UMLang.ExecGen.GenFlags.
+Require Import UMLang.ExecGen.ExecGenDefs.
+
+Context {Ledger : Type}.
+Print generate_proof_2.
+
+Definition claim_exec_P : forall (l : LedgerLRecord) poolId,
+  {l' | l' = exec_state (Uinterpreter (claim poolId)) l}.
+Proof.
+   intros.
+   generate_proof_2 claim.
+Defined.
+Print claim_exec_P.
+
+Definition claim_exec_trm : forall (l : LedgerLRecord) (poolId : uint256), LedgerLRecord.
+intros.
+let_term_of_2 claim_exec_P (claim_exec_P l poolId).
+Defined.
+(* Print claim_exec. *)
+
+Definition claim_exec : forall (l : LedgerLRecord) (poolId : uint256), LedgerLRecord.
+intros.
+flat_term_of_2 claim_exec_trm (claim_exec_trm l poolId).
+Defined.
+
+Definition claim_exec_proof : forall (l : LedgerLRecord) (poolId : uint256), 
+ claim_exec l poolId =  exec_state (Uinterpreter (claim poolId)) l.
+intros.
+proof_of_2 claim claim_exec_P (claim_exec_P l poolId).
+Defined.
+Print claim_exec_proof.
+Local Open Scope N_scope.
+Print IDefault_left. (* Тут лежат сообщения дефолтные, но это лвалью, поэтому
+это ульвэль надо как-то преобразовать в рвэлью *)
+
+(* The remaining amount for 
+each successful claim is decreased by the transfer amount to the recipient *)
+
+(* 
+∀ params : eval(claim(params)) = ok(Void) ⟶ 
+(let exit = exec(claim(params)).out.messages in exit.size > 0 ∧
+ exit[0].method = transfer ∧
+  exit[0].receiver = params.m_recipient ∧
+   exit[0].value = params.m_remainingValue - exec(claim(params)).this.m_remainingValue) *)
+Require Import FinProof.CommonInstances.
+
+#[global]
+Instance OutgoingMessage_booleq: forall I `{XBoolEquable bool I}, XBoolEquable bool 
+         (OutgoingMessage I).
+intros.
+esplit.
+intros.
+case_eq X; intros; case_eq X0; intros.
+refine (eqb i i0). refine false. refine false.
+refine  (eqb i i1 && eqb i0 i2)%bool.
+Defined.
+
+Definition isMessageSent {I}`{XBoolEquable bool I} (m: OutgoingMessage I) (a: address) (n: N)
+                        (l: XHMap address (XQueue (OutgoingMessage I))) : bool :=
+let subm := q2m (hmapFindWithDefault default a l) in               
+let maxk : option N := xHMapMaxKey subm in 
+match maxk with 
+   | None => false
+   | Some k => 
+      match hmapLookup (k-n) subm with
+      | None => false
+      | Some m' => eqb m m'
+      end
+end. 
+
+#[global, program]
+Instance IDefault_booleq : XBoolEquable bool IDefault.
+Next Obligation.
+destruct H2, H3.
+refine true.
+Defined.
+
+
+Check (EmptyMessage IDefault (Build_XUBInteger 0, (false, Build_XUBInteger 64))).
+Print isMessageSent.
+ Definition claim_test : forall l l' addr value (poolId : uint256), 
+ false = isError (eval_state (Uinterpreter (claim poolId)) l) -> 
+ l' = exec_state (Uinterpreter (claim poolId)) l ->
+ addr = toValue (eval_state (sRReader || m_recipient || ) l) ->
+ value = fst (toValue (eval_state (sRReader || calcUnlocked ( ) || ) l)) ->
+ let mes := (EmptyMessage IDefault (value, (true, Build_XUBInteger 2))) in
+   isMessageSent mes addr 0 
+   (toValue (eval_state (sRReader (ULtoRValue IDefault_left)) l')) = true.
+
+
+
+
 
 (* VestLib *)
 Ursus Definition calcPoolConstructorFee (vestingMonths :  uint8): public ( uint128) false .

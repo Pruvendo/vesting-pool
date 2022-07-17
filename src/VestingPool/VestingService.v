@@ -311,6 +311,61 @@ Ursus Definition createPool (amount :  uint128) (cliffMonths :  uint8) (vestingM
 Defined.
 Sync. 
 
+#[global, program]
+Instance VsetingPoolPtr_booleq: XBoolEquable bool IVestingPool.
+Next Obligation.
+destruct X, X0.
+ 1, 4, 9: refine true.
+ all : refine false.
+Defined.
+
+Require Import FinProof.CommonInstances.
+
+#[global]
+Instance OutgoingMessage_booleq: forall I `{XBoolEquable bool I}, XBoolEquable bool 
+         (OutgoingMessage I).
+intros.
+esplit.
+intros.
+case_eq X; intros; case_eq X0; intros.
+refine (eqb i i0). refine false. refine false.
+refine  (eqb i i1 && eqb i0 i2)%bool.
+Defined.
+
+Definition isMessageSent {I}`{XBoolEquable bool I} (m: OutgoingMessage I) (a: address) (n: N)
+                        (l: XHMap address (XQueue (OutgoingMessage I))) : bool :=
+let subm := q2m (hmapFindWithDefault default a l) in               
+let maxk : option N := xHMapMaxKey subm in 
+match maxk with 
+   | None => false
+   | Some k => 
+      match hmapLookup (k-n) subm with
+      | None => false
+      | Some m' => eqb m m'
+      end
+end.
+
+Require Import UMLang.UrsusLib.
+Require Import UMLang.ExecGenerator.
+Require Import UMLang.ExecGen.GenFlags.
+Require Import UMLang.ExecGen.ExecGenDefs.
+Locate "IVestingPoolPtr".
+
+
+Definition create_pool : forall l l' amount cliffMonths vestingMonths recipient claimers claimersMap addr  (poolId : uint256), 
+ false = isError (eval_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient claimers)) l) -> 
+ l' = exec_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient claimers)) l ->
+ let mes_cons := (IVestingPool._constructor amount cliffMonths vestingMonths recipient claimersMap) in
+ let mes := OutgoingInternalMessage  (Build_XUBInteger 0, (true, Build_XUBInteger 64)) mes_cons  in
+   isMessageSent mes addr 0 
+   (toValue (eval_state (sRReader (ULtoRValue IVestingPool_left)) l')) = true.
+
+
+
+   addr = toValue (eval_state (sRReader || m_recipient || ) l) ->
+   value = fst (toValue (eval_state (sRReader || calcUnlocked ( ) || ) l)) ->
+
+
 Ursus Definition constructor (poolImage :  cell_): public PhantomType true .
   :: (onlyOwner  _) .
   :: (accept  _) .
