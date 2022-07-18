@@ -324,18 +324,104 @@ Proof.
    rewrite H3. auto.
 Qed.
 
-Definition claim_exec_proof : forall (l : LedgerLRecord) (poolId : uint256), 
+(* Definition claim_exec_proof : forall (l : LedgerLRecord) (poolId : uint256), 
  claim_exec l poolId =  exec_state (Uinterpreter (claim poolId)) l.
 intros.
 proof_of_2 claim claim_exec_P (claim_exec_P l poolId).
 Defined.
 Print claim_exec_proof.
 Local Open Scope N_scope.
-
-
-Check (EmptyMessage IDefault (Build_XUBInteger 0, (false, Build_XUBInteger 64))).
-Print isMessageSent.
  *)
+Check (EmptyMessage IDefault (Build_XUBInteger 0, (false, Build_XUBInteger 64))).
+(*Print isMessageSent.
+ *)
+
+
+
+(* VestLib *)
+Ursus Definition calcPoolConstructorFee (vestingMonths :  uint8): public ( uint128) false .
+   :://return_ (((ι (#{vestingMonths}) * FEE_CLAIM) + CONSTRUCTOR_GAS) + STORAGE_FEE) |.
+   lia.
+Defined.
+Sync. 
+
+
+Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )): public PhantomType true .
+  :: (contractOnly  _) .
+  (* TODO *)
+  refine {{minValue( #{amount} + (* VestLib *)calcPoolConstructorFee(#{vestingMonths}))  ; {_} }} .
+  (* TODO *)
+   ::// new 'service : (  address ) @ "service"  := {} (*tvm->codeSalt(tvm->code())->get()->toSlice()->decode(address) *); _ |.
+   :://require_((!{service} == msg->sender), ERR_INVALID_SENDER) .
+   :://m_createdAt := now.
+   :://m_cliffEnd := (m_createdAt + (ι (#{cliffMonths}) * (β #{30}))) .
+   lia.
+   :://m_vestingEnd := (m_cliffEnd + (ι (#{vestingMonths}) * (β #{30}))) .
+   lia.
+   :://m_totalAmount := #{amount} .
+   :://m_remainingAmount := m_totalAmount .
+   :://m_recipient := #{recipient} .
+   :://m_claimers := #{claimers} .
+   :://m_vestingFrom := m_cliffEnd .
+   
+   :://m_vestingAmount :=  ((#{vestingMonths}) > (β #{0})) ? (m_totalAmount / ι #{vestingMonths}) : m_totalAmount .
+   lia.
+   (* IOnPoolActivated(service).onPoolActivated{
+            value: 0.03 ever, bounce: false, flag: 0
+        }(); *)
+   
+   ::// IOnPoolActivated.onPoolActivated ( ) 
+         ⤳ (!{service}) with 
+         [$ 
+               (β #{30000000} (*0.03 ever*)) ⇒ { Message_ι_value};
+               FALSE ⇒ { Message_ι_bounce};
+               (β #{0}) ⇒ { Message_ι_flag}
+         $].
+   :://return_ {} |.
+Defined.
+Sync. 
+
+Check constructor.
+ (*A list of clients can not be updated after the pool is created*)
+ Axiom GVS_09 : forall l l' _claimers _claimers' (poolId : uint256),
+ l' = exec_state (Uinterpreter (claim poolId)) l ->
+ _claimers = toValue (eval_state (sRReader || m_claimers || ) l) ->
+ _claimers' = toValue (eval_state (sRReader || m_claimers || ) l') ->
+ _claimers = _claimers'.
+ (*A  receiver of funds can not be updated after the pool is created.*)
+ Axiom GVS_10 : forall l l' _recipient _recipient' (poolId : uint256),
+ l' = exec_state (Uinterpreter (claim poolId)) l ->
+ _recipient = toValue (eval_state (sRReader || m_recipient || ) l) ->
+ _recipient' = toValue (eval_state (sRReader || m_recipient || ) l') ->
+ _recipient = _recipient'.
+(*Vesting pool parameters must be initialized by the constructor*)
+Axiom GVS_11 : forall l l' (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )),
+isError (eval_state (Uinterpreter (constructor amount cliffMonths vestingMonths recipient claimers)) l) = false ->
+l' = exec_state (Uinterpreter (constructor amount cliffMonths vestingMonths recipient claimers)) l ->
+(* m_createdAt = params.now *)
+toValue (eval_state (sRReader || m_createdAt || ) l') = toValue (eval_state (sRReader || (now) || ) l) /\
+(* m_recipient = params.recipient *)
+toValue (eval_state (sRReader || m_recipient || ) l') = recipient /\
+(* m_claimers = claimers *)
+toValue (eval_state (sRReader || m_claimers || ) l') = claimers /\
+(* m_cliffEnd = params.now + params.cliffMonths * 30 * 86400 *)
+uint2N (toValue (eval_state (sRReader || m_cliffEnd || ) l')) = uint2N (toValue (eval_state (sRReader || (now) || ) l)) + uint2N (cliffMonths)*30*86400 /\
+(* m_vestingEnd = params.now + (params.cliffMonths + params.vestingMonths) * 30 * 86400 *)
+uint2N (toValue (eval_state (sRReader || m_vestingEnd || ) l')) = uint2N (toValue (eval_state (sRReader || (now) || ) l)) + uint2N (vestingMonths)*30*86400 /\
+(* m_totalAmount = params.amount *)
+toValue (eval_state (sRReader || m_totalAmount || ) l') = amount /\
+(* m_remainingAmount = params.amount *)
+toValue (eval_state (sRReader || m_remainingAmount || ) l') = amount.
+(*Funds are locked in the pool to return until the deadline of the open window.*)
+Axiom GVS_12_1 : forall l l' (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )),
+isError (eval_state (Uinterpreter (constructor amount cliffMonths vestingMonths recipient claimers)) l) = false ->
+l' = exec_state (Uinterpreter (constructor amount cliffMonths vestingMonths recipient claimers)) l ->
+uint2N (toValue (eval_state (sRReader || tvm->balance () || ) l')) > uint2N amount.
+Axiom GVS_12_2 : forall l l'  (poolId : uint256),
+l' = exec_state (Uinterpreter (claim poolId)) l ->
+uint2N (toValue (eval_state (sRReader || tvm->balance () || ) l)) > uint2N (toValue (eval_state (sRReader || m_remainingAmount || ) l)) ->
+uint2N (toValue (eval_state (sRReader || tvm->balance () || ) l')) > uint2N (toValue (eval_state (sRReader || m_remainingAmount || ) l')).
+
 (*To prevent incorrect usage of the pool it can  transfer only once per time-slot after the first call. The  rest of calls to transfer within a time are rejected.  *)
 (* TODO l' = l' with now' *)
 Axiom GVS_13 : forall l l' _now _now' _VESTING_PERIOD _vestingFrom n (poolId : uint256),
@@ -409,50 +495,6 @@ Axiom GVS_18 : forall l l' addr value _now _cliffEnd _vestingEnd vestingPeriods 
    -> (uint2N value > 0) /\
    ( uint2N value = (vestingPeriods * uint2N _vestingAmount)).
 
-
-
-(* VestLib *)
-Ursus Definition calcPoolConstructorFee (vestingMonths :  uint8): public ( uint128) false .
-   :://return_ (((ι (#{vestingMonths}) * FEE_CLAIM) + CONSTRUCTOR_GAS) + STORAGE_FEE) |.
-   lia.
-Defined.
-Sync. 
-
-
-Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )): public PhantomType true .
-  :: (contractOnly  _) .
-  (* TODO *)
-  refine {{minValue( #{amount} + (* VestLib *)calcPoolConstructorFee(#{vestingMonths}))  ; {_} }} .
-  (* TODO *)
-   ::// new 'service : (  address ) @ "service"  := {} (*tvm->codeSalt(tvm->code())->get()->toSlice()->decode(address) *); _ |.
-   :://require_((!{service} == msg->sender), ERR_INVALID_SENDER) .
-   :://m_createdAt := now.
-   :://m_cliffEnd := (m_createdAt + (ι (#{cliffMonths}) * (β #{30}))) .
-   lia.
-   :://m_vestingEnd := (m_cliffEnd + (ι (#{vestingMonths}) * (β #{30}))) .
-   lia.
-   :://m_totalAmount := #{amount} .
-   :://m_remainingAmount := m_totalAmount .
-   :://m_recipient := #{recipient} .
-   :://m_claimers := #{claimers} .
-   :://m_vestingFrom := m_cliffEnd .
-   
-   :://m_vestingAmount :=  ((#{vestingMonths}) > (β #{0})) ? (m_totalAmount / ι #{vestingMonths}) : m_totalAmount .
-   lia.
-   (* IOnPoolActivated(service).onPoolActivated{
-            value: 0.03 ever, bounce: false, flag: 0
-        }(); *)
-   
-   ::// IOnPoolActivated.onPoolActivated ( ) 
-         ⤳ (!{service}) with 
-         [$ 
-               (β #{30000000} (*0.03 ever*)) ⇒ { Message_ι_value};
-               FALSE ⇒ { Message_ι_bounce};
-               (β #{0}) ⇒ { Message_ι_flag}
-         $].
-   :://return_ {} |.
-Defined.
-Sync. 
 
 EndContract Implements (*интерфейсы*) IVestingPool.
 End VestingPoolContract.
