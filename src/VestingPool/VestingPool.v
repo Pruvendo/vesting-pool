@@ -335,7 +335,53 @@ Local Open Scope N_scope.
 
 Check (EmptyMessage IDefault (Build_XUBInteger 0, (false, Build_XUBInteger 64))).
 Print isMessageSent.
- Definition claim_test : forall l l' addr value (poolId : uint256), 
+ *)
+(*To prevent incorrect usage of the pool it can  transfer only once per time-slot after the first call. The  rest of calls to transfer within a time are rejected.  *)
+(* TODO l' = l' with now' *)
+Axiom GVS_13 : forall l l' _now _now' _VESTING_PERIOD _vestingFrom n (poolId : uint256),
+l' = exec_state (Uinterpreter (claim poolId)) l ->
+isError (eval_state (Uinterpreter (claim poolId)) l) = false ->
+_now = toValue (eval_state (sRReader || (now) || ) l) ->
+_now' = toValue (eval_state (sRReader || (now) || ) l') ->
+_VESTING_PERIOD = toValue (eval_state (sRReader || VESTING_PERIOD || ) l) ->
+_vestingFrom = toValue (eval_state (sRReader || m_vestingFrom || ) l) ->
+(uint2N _now > uint2N _vestingFrom + n* uint2N _VESTING_PERIOD) ->
+(uint2N _now < uint2N _vestingFrom + (n+1)* uint2N _VESTING_PERIOD) ->
+(uint2N _now' > uint2N _vestingFrom + n* uint2N _VESTING_PERIOD) ->
+(uint2N _now' < uint2N _vestingFrom + (n+1)* uint2N _VESTING_PERIOD) ->
+(uint2N _now <= uint2N _now') ->
+isError (eval_state (Uinterpreter (claim poolId)) l') = true.
+
+(*Only claimers can claim *) 
+Axiom GVS_14 : forall l _msgSender _claimers (poolId : uint256),
+_msgSender = toValue (eval_state (sRReader || msg->pubkey() || ) l)  ->
+_claimers = toValue (eval_state (sRReader || m_claimers || ) l)  ->
+ _claimers[_msgSender] = false ->
+isError (eval_state (Uinterpreter (claim poolId)) l) = true.
+(* Any attempts to claim during the cliff period must lead to exception *)
+Axiom GVS_15 : forall l _now _cliffEnd (poolId : uint256),
+_now = toValue (eval_state (sRReader || (now) || ) l) ->
+_cliffEnd = toValue (eval_state (sRReader || m_cliffEnd || ) l) ->
+(uint2N _now < uint2N _cliffEnd) ->
+isError (eval_state (Uinterpreter (claim poolId)) l) = true. 
+(*Any attempt to claim after vestingEnd must lead to sending the rest of the amount to the recipient and the change back to the creator. Also the pool must suicide itself.*)
+(* TODO suicide
+transfer to creator *)
+Axiom GVS_16 : forall l l' addr value _vestingEnd _now (poolId : uint256), 
+ false = isError (eval_state (Uinterpreter (claim poolId)) l) -> 
+ l' = exec_state (Uinterpreter (claim poolId)) l ->
+ _now = toValue (eval_state (sRReader || (now) || ) l) ->
+ _vestingEnd = toValue (eval_state (sRReader || m_vestingEnd || ) l) ->
+ (uint2N _now > uint2N _vestingEnd) ->
+ addr = toValue (eval_state (sRReader || m_recipient || ) l) ->
+ value = (toValue (eval_state (sRReader || m_remainingAmount  || ) l)) ->
+
+ let mes := (EmptyMessage IDefault (value, (true, Build_XUBInteger 2))) in
+   isMessageSent mes addr 0 
+   (toValue (eval_state (sRReader (ULtoRValue IDefault_left)) l')) = true.
+
+ (* The remaining amount for each successful claim is decreased by the transfer amount to the recipient*)
+Axiom GVS_17_1 : forall l l' addr value (poolId : uint256), 
  false = isError (eval_state (Uinterpreter (claim poolId)) l) -> 
  l' = exec_state (Uinterpreter (claim poolId)) l ->
  addr = toValue (eval_state (sRReader || m_recipient || ) l) ->
@@ -343,15 +389,25 @@ Print isMessageSent.
  let mes := (EmptyMessage IDefault (value, (true, Build_XUBInteger 2))) in
    isMessageSent mes addr 0 
    (toValue (eval_state (sRReader (ULtoRValue IDefault_left)) l')) = true.
-Proof.
-   intros.
-   introduce (exec_state (Uinterpreter (claim poolId)) l).
-   unfold claim. repeat auto_build_P.
-   extract_eq_flat.
-   rewrite <- H3 in HeqP.
-   rewrite <- HeqP.
-   subst L.
-   unfold isError in H2.
+(* If the current time is after cliff period and before the vesting end (that effectively means that vesting period is more than zero) the amount to vest is calculated by the following formula*)
+Axiom GVS_18 : forall l l' addr value _now _cliffEnd _vestingEnd vestingPeriods _vestingAmount _VESTING_PERIOD _vestingFrom (poolId : uint256), 
+(* l = exec_state (Uinterpreter (constructor _ _ _ _)) l_default -> *)
+ l' = exec_state (Uinterpreter (claim poolId)) l ->
+ addr = toValue (eval_state (sRReader || m_recipient || ) l) ->
+ _now = toValue (eval_state (sRReader || (now) || ) l) ->
+ _cliffEnd = toValue (eval_state (sRReader || m_cliffEnd || ) l) ->
+ _vestingEnd = toValue (eval_state (sRReader || m_vestingEnd || ) l) ->
+ (uint2N _now > uint2N _cliffEnd) ->
+ (uint2N _now < uint2N _vestingEnd) ->
+ _vestingAmount = toValue (eval_state (sRReader || m_vestingAmount || ) l) ->
+ _vestingFrom = toValue (eval_state (sRReader || m_vestingFrom || ) l) ->
+ _VESTING_PERIOD = toValue (eval_state (sRReader || VESTING_PERIOD || ) l) ->
+ vestingPeriods =  (( uint2N _now -  uint2N _vestingFrom) / uint2N _VESTING_PERIOD ) ->
+ let mes := (EmptyMessage IDefault (value, (true, Build_XUBInteger 2))) in
+ (isMessageSent mes addr 0 
+ (toValue (eval_state (sRReader (ULtoRValue IDefault_left)) l')) = true)
+   -> (uint2N value > 0) /\
+   ( uint2N value = (vestingPeriods * uint2N _vestingAmount)).
 
 
 
@@ -394,7 +450,7 @@ Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vesting
                FALSE ⇒ { Message_ι_bounce};
                (β #{0}) ⇒ { Message_ι_flag}
          $].
-   ://return_ {} |.
+   :://return_ {} |.
 Defined.
 Sync. 
 
