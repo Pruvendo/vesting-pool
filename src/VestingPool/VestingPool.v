@@ -170,10 +170,10 @@ Sync.
 #[override]
 Ursus Definition claim (poolId :  uint256): external PhantomType true .
 (* TODO *)
-  refine {{ onlyOwners (m_claimers) ; {_} }} .
+  (* refine {{ onlyOwners (m_claimers) ; {_} }} . *)
    :://require_(((#{poolId}) == id)) .
    :://  new ( 'unlocked : uint128 , 'unlockedPeriod : uint32 ) @ ( "unlocked" , "unlockedPeriod" ) := calcUnlocked( ) ; _ |.  
-   :://require_((!{unlocked} > (β #{0}))) .
+   (* :://require_((!{unlocked} > (β #{0}))) . *)
    :://tvm->accept() .
    :://m_remainingAmount -= !{unlocked} .
    :://m_vestingFrom += !{unlockedPeriod} .
@@ -264,6 +264,74 @@ destruct H2, H3.
 refine true.
 Defined.
 
+Definition claim_err_P : forall (l : LedgerLRecord) poolId,
+  {l' | l' = isError (eval_state (Uinterpreter (claim poolId)) l)}.
+Proof.
+   intros.
+   generate_proof_2 claim.
+Defined.
+
+
+Definition claim_err_P_trm : forall (l : LedgerLRecord) (poolId : uint256), bool.
+intros.
+let_term_of_2 claim_err_P (claim_err_P l poolId).
+Defined.
+Print claim_err_P_trm.
+
+Definition claim_err : forall (l : LedgerLRecord) (poolId : uint256), bool.
+intros.
+flat_term_of_2 claim_err_P_trm (claim_err_P_trm l poolId).
+Defined.
+Print claim_err.
+
+Lemma claim_err_prf : forall (l : LedgerLRecord) (poolId : uint256), 
+    claim_err l poolId = isError (eval_state (Uinterpreter (claim poolId)) l).
+Proof.
+   intros.
+   proof_of_2 claim_err claim_err_P (claim_err_P l poolId).
+Qed.
+
+Tactic Notation "noarith" "compute" "-" ident(ln) := (
+  compute -[N.add N.ltb N.sub N.leb N.min N.mul N.div ln]
+).
+
+Tactic Notation "noarith" "compute" "in" hyp(H) := (
+  compute -[N.add N.ltb N.sub N.leb N.min N.mul N.div] in H
+).
+Require Import ssreflect.
+Tactic Notation "generate_exec" := (
+  let P := fresh "P" in
+  let eq := fresh "eq" in
+  match goal with |- ?t = _ => introduce t as P;
+  [
+    fold XBool XUInteger XMaybe XList XProd XHMap;
+    repeat auto_build_P
+  | extract_eq_flat of P as eq term L;
+    rewrite -eq ; clear eq
+  ]
+  end).
+
+Lemma claim_errE : forall (l : LedgerLRecord) (poolId : uint256),
+   let id_ : uint256 := toValue (eval_state (sRReader || id || ) l) in 
+   (eqb poolId id_) = true ->
+   toValue (eval_state (sRReader || {URScalar poolId } == id ||) l) = true ->
+   claim_err l poolId = false.
+Proof.
+   intros.
+   remember (claim_err l poolId) as er.
+   cbv beta delta [claim_err] in Heqer.
+   rewrite Heqer.
+   rewrite H3. auto.
+Qed.
+
+Definition claim_exec_proof : forall (l : LedgerLRecord) (poolId : uint256), 
+ claim_exec l poolId =  exec_state (Uinterpreter (claim poolId)) l.
+intros.
+proof_of_2 claim claim_exec_P (claim_exec_P l poolId).
+Defined.
+Print claim_exec_proof.
+Local Open Scope N_scope.
+
 
 Check (EmptyMessage IDefault (Build_XUBInteger 0, (false, Build_XUBInteger 64))).
 Print isMessageSent.
@@ -275,8 +343,15 @@ Print isMessageSent.
  let mes := (EmptyMessage IDefault (value, (true, Build_XUBInteger 2))) in
    isMessageSent mes addr 0 
    (toValue (eval_state (sRReader (ULtoRValue IDefault_left)) l')) = true.
-
-
+Proof.
+   intros.
+   introduce (exec_state (Uinterpreter (claim poolId)) l).
+   unfold claim. repeat auto_build_P.
+   extract_eq_flat.
+   rewrite <- H3 in HeqP.
+   rewrite <- HeqP.
+   subst L.
+   unfold isError in H2.
 
 
 
