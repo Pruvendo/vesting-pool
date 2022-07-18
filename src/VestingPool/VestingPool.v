@@ -381,7 +381,16 @@ Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vesting
 Defined.
 Sync. 
 
-Check constructor.
+(*The value of pool creation must cover the vesting amount as well as following fee : for pool creation, for each claim, for storage*)
+Axiom GVS_06 : forall l l' (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )),
+uint2N (toValue (eval_state (sRReader || msg->value  || ) l')) > 
+uint2N  amount  + 
+ uint2N (toValue (eval_state (sRReader || CONSTRUCTOR_GAS  || ) l')) + 
+ uint2N (toValue (eval_state (sRReader || STORAGE_FEE  || ) l')) + 
+uint2N (toValue (eval_state (sRReader || FEE_CLAIM  || ) l')) * uint2N vestingMonths  -> 
+isError (eval_state (Uinterpreter (constructor amount cliffMonths vestingMonths recipient claimers)) l) = true.
+
+
  (*A list of clients can not be updated after the pool is created*)
  Axiom GVS_09 : forall l l' _claimers _claimers' (poolId : uint256),
  l' = exec_state (Uinterpreter (claim poolId)) l ->

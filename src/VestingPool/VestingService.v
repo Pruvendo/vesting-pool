@@ -359,13 +359,14 @@ Definition create_pool : forall l l' amount cliffMonths vestingMonths recipient 
  let mes := OutgoingInternalMessage  (Build_XUBInteger 0, (true, Build_XUBInteger 64)) mes_cons  in
    isMessageSent mes addr 0 
    (toValue (eval_state (sRReader (ULtoRValue IVestingPool_left)) l')) = true.
+Proof.
+Abort.
 
-
-
+(* 
    addr = toValue (eval_state (sRReader || m_recipient || ) l) ->
    value = fst (toValue (eval_state (sRReader || calcUnlocked ( ) || ) l)) ->
 
-
+ *)
 Ursus Definition constructor (poolImage :  cell_): public PhantomType true .
   :: (onlyOwner  _) .
   :: (accept  _) .
@@ -374,6 +375,67 @@ Ursus Definition constructor (poolImage :  cell_): public PhantomType true .
    :://m_nextId := (β #{1}) .
    :://return_ {} |.
 Defined.
+Sync.
+
+(**************)
+#[override]
+Ursus Definition createClaimersMap  (claimers :  mapping uint256 uint256): external (mapping  ( uint256 )( boolean )) false .
+  ::// new 'claimersMap : (  mapping  ( uint256 )( boolean ) ) @ "claimersMap" ;_|.
+  ::// for ( 'pubkey : #{claimers} ) do { {_:UExpression _ false} } .
+  :://  new ( 'key : uint256 , 'value : uint256 ) @ ( "key" , "value" ) := pubkey ; _ |.  
+  ::// {claimersMap} := !{claimersMap} ->set (!{value}, TRUE)|.
+   :://return_ !{claimersMap} |.
+Defined.
 Sync. 
+
+Check createClaimersMap.
+
+(*New pool can be created  by anybody, after being addressed as Creator*)
+Axiom GVS_01 : forall l l' (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping uint256 uint256),
+l' = exec_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient claimers)) l ->
+toValue (eval_state (sRReader || msg->sender  || ) l') = default ->
+isError (eval_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient claimers)) l) = true.
+
+(* Anybody non-empty can be included into the client public key list *)
+Axiom GVS_02 : forall l l' (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers claimers' :  mapping uint256 uint256),
+isError (eval_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient claimers)) l) = false ->
+(* TODO claimers->length() = 0 ->
+claimers->length() < MAX -> *)
+isError (eval_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient claimers')) l') = false.
+
+ (*At least one client must exists*)
+Locate "->length()".
+Locate "int7".
+Axiom GVS_03 : forall l (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping uint256 uint256),
+(* TODO claimers->length() = 0 ->
+ *) isError (eval_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient claimers)) l) = true.
+ Axiom GVS_05 : forall l l' (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient recipient' :  address) (claimers  :  mapping uint256 uint256),
+ isError (eval_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient claimers)) l) = false ->
+ uint2N (snd recipient') =  0 ->
+ (* TODO int2N ((recipient')->wid) = 0 -> *)
+ isError (eval_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient' claimers)) l') = false.
+ 
+
+(*GVS_06 in VestingPool *)
+ (*If all the input is correct a new VestingPool is created*)
+Axiom GVS_07 : forall l l'  addr (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping uint256 uint256),
+isError (eval_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient claimers)) l) = false ->
+l' = exec_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient claimers)) l ->
+let claimersMap := toValue (eval_state (Uinterpreter  (createClaimersMap  claimers) ) l) in 
+let mes_cons := (IVestingPool._constructor amount cliffMonths vestingMonths recipient claimersMap) in
+let mes := OutgoingInternalMessage  (Build_XUBInteger 0, (true, Build_XUBInteger 64)) mes_cons  in
+(* ?TODO GVS_08_1  address = address (_nextId)*)
+isMessageSent mes addr 0 
+  (toValue (eval_state (sRReader (ULtoRValue IVestingPool_left)) l')) = true.
+
+Axiom GVS_08 : forall l l' _nextId _nextId' (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping uint256 uint256),
+isError (eval_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient claimers)) l) = false ->
+l' = exec_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient claimers)) l ->
+_nextId = toValue (eval_state (sRReader || m_nextId || ) l) ->
+_nextId' = toValue (eval_state (sRReader || m_nextId || ) l') ->
+uint2N _nextId' > uint2N _nextId.
+
+(* ?TODO GVS_08_1  address = address (_nextId)*)
+
 EndContract Implements (*интерфейсы*) IVestingService.
 End VestingServiceContract.
