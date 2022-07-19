@@ -168,7 +168,7 @@ Defined.
 Sync. 
 
 #[override]
-Ursus Definition claim (poolId :  uint256): external PhantomType true .
+Ursus Definition claim (poolId : uint256) : external PhantomType true.
 (* TODO *)
   refine {{ onlyOwners (m_claimers) ; {_} }} .
    :://require_(((#{poolId}) == id)) .
@@ -179,7 +179,7 @@ Ursus Definition claim (poolId :  uint256): external PhantomType true .
    :://m_vestingFrom += !{unlockedPeriod} .
    :://tvm->transfer(m_recipient, !{unlocked}, TRUE, (β #{2})) .
    ::// if ( (m_remainingAmount == (β #{0})) ) then { {_:UExpression _ false} } .
-   :://selfdestruct(creator)  |.
+   :://selfdestruct(creator) |.
 
    ://return_ {} |.
 Defined.
@@ -218,48 +218,71 @@ Hint Unfold
    UExpressionP_Next_LedgerableWithLArgsL
    sInjectL
    ULtoRValueL
-   tvm_transfer
-   send_internal_message_
-   send_internal_message
-   send_internal_message_left
-   send_internal_message_pre
+   (* tvm_transfer *)
+   (* send_internal_message_ *)
+   (* send_internal_message *)
+   (* send_internal_message_left *)
+   (* send_internal_message_pre *)
    suicide_left
    _defaultMessageQueue
    suicide
        : unfolderDb.
 
-Generate_Super_Exec tvm_transfer.
+(* Definition tvm_transfer' := fun x1 x2 x3 x4 => @tvm_transfer LedgerLRecord ContractLRecord LocalStateLRecord
+MessagesAndEventsLRecord LedgerLLedgerClass _defaultMessageQueue x1 x2 x3 x4. *)
+
+Definition defLocalState := Eval hnf in default : LocalStateLRecord.
+Definition defMessagesAndEvents := Eval hnf in default : MessagesAndEventsLRecord.
+Opaque LedgerLRecord N.add N.ltb N.sub N.leb N.min N.mul N.div N.land Util.P.
+
+Ltac elpi_define_execs := 
+  elpi_define_execs_pre
+    LedgerLRecord
+    MessagesAndEventsLRecord 
+    LocalStateLRecord
+    ContractLRecord
+    VMStateLRecord.
+
+(* Definition tvm_transfer_left' := fun x1 x2 x3 x4 x5 => @tvm_transfer_left LedgerLRecord ContractLRecord LocalStateLRecord
+MessagesAndEventsLRecord LedgerLLedgerClass true true true true x1 x2 x3 x4 x5 PhantomType. *)
+    
+
+(* Arguments tvm_transfer' /. *)
+(* Check tvm_transfer_left'. *)
+
+(* Generate_Super_Exec tvm_transfer_left'.
+Compute_Super_Exec tvm_transfer'.
+Print tvm_transfer'exec.
+
+Check tvm_transfer.
+
+Goal tvm_transferexec_trm.
+unfold tvm_transferexec_trm. *)
  
 
-Definition claim_exec_P : forall (l : LedgerLRecord) dest value bounce flags,
-  {l' | l' = exec_state (Uinterpreter (tvm_transfer dest value bounce flags)) l}.
+Definition claim_exec_P : forall (l : LedgerLRecord) poolId,
+  {l' | l' = exec_state (Uinterpreter (claim poolId)) l}.
 Proof.
    intros.
-   unfold tvm_transfer.
+   unfold claim.
    autounfold with unfolderDb.
    fold XBool XUInteger XMaybe XList XProd XHMap.
    idtac "Start auto_build_P";
    repeat auto_build_P; idtac "auto_build_P is successful".
 Defined.
 
-Print tvm_transfer_left.
-
-Definition claim_exec_trm : forall (l : LedgerLRecord)
-   (dest : address) (value : uint128)
-   (bounce : boolean) (flags : uint16), LedgerLRecord.
+Definition claim_exec_trm : forall (l : LedgerLRecord) (poolId :uint256), LedgerLRecord.
 intros.
-let_term_of_2 claim_exec_P (claim_exec_P l dest value bounce flags).
+let_term_of_2 claim_exec_P (claim_exec_P l poolId).
 Defined.
+
+Print "Hello world!".
 (* Print claim_exec. *)
 
-Definition claim_exec : forall (l : LedgerLRecord)
-  (dest : address) (value : uint128)
-(bounce : boolean) (flags : uint16), LedgerLRecord.
+Definition claim_exec : forall (l : LedgerLRecord) (poolId : uint256), LedgerLRecord.
 intros.
-flat_term_of_2 claim_exec_trm (claim_exec_trm l dest value bounce flags).
+flat_term_of_2 claim_exec_trm (claim_exec_trm l poolId).
 Defined.
-
-Print claim_exec.
 
 Definition claim_exec_proof : forall (l : LedgerLRecord) (poolId : uint256), 
  claim_exec l poolId =  exec_state (Uinterpreter (claim poolId)) l.

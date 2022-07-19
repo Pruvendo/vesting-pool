@@ -80,7 +80,7 @@ Elpi Accumulate lp:{{
     coq.say LemmaSigName "is defined.",
 
     ExecName' is ExecName ^ "_trm",
-    % coq.env.add-const ExecName' TOE _ _ _,
+    %coq.env.add-const ExecName' TOE _ _ _,
     coq.env.add-const-ltac1 ExecName' TOE "let_term_of_2'" [LemmaSigName] _ _,
     coq.say ExecName' "is defined.",
 
@@ -100,10 +100,10 @@ Elpi Accumulate lp:{{
   end.
 
   main [str Name] :- 
-    get_eta Name Fun,
     coq.locate Name NameRef,
-    % coq.locate "upd_ledger_fields" UpdRef,
     coq.arguments.set-default-implicit NameRef,
+    get_eta Name Fun,
+    % coq.locate "upd_ledger_fields" UpdRef,
     % get_eta "upd_ledger_fields" 
     % (fun _ _ l1\
     % fun _ _ l2\
@@ -115,6 +115,7 @@ Elpi Accumulate lp:{{
     % pull_lambdas2' Upd Fun' (x\ y\ {{  StrictBinding lp:{{x}} lp:{{y}} }}) Fun'',
     % std.assert-ok! (coq.typecheck Fun'' _) "type error while StrictBinding application",
     % std.assert-ok! (coq.elaborate-skeleton Fun'' _ Fun) "can not infer parameters while StrictBinding application",
+    coq.say {coq.term->string Fun},
     get_fun "Uinterpreter" Uinterpreter,
     pull_lambdas Fun (c0 \ app
     [Uinterpreter, _, _, _, _, _, _, _, _, _, _, _,
