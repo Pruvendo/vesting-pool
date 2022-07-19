@@ -170,10 +170,10 @@ Sync.
 #[override]
 Ursus Definition claim (poolId :  uint256): external PhantomType true .
 (* TODO *)
-  (* refine {{ onlyOwners (m_claimers) ; {_} }} . *)
+  refine {{ onlyOwners (m_claimers) ; {_} }} .
    :://require_(((#{poolId}) == id)) .
    :://  new ( 'unlocked : uint128 , 'unlockedPeriod : uint32 ) @ ( "unlocked" , "unlockedPeriod" ) := calcUnlocked( ) ; _ |.  
-   (* :://require_((!{unlocked} > (β #{0}))) . *)
+   :://require_((!{unlocked} > (β #{0}))) .
    :://tvm->accept() .
    :://m_remainingAmount -= !{unlocked} .
    :://m_vestingFrom += !{unlockedPeriod} .
@@ -189,17 +189,57 @@ Require Import UMLang.UrsusLib.
 Require Import UMLang.ExecGenerator.
 Require Import UMLang.ExecGen.GenFlags.
 Require Import UMLang.ExecGen.ExecGenDefs.
+Require Import Generator.Generator.
 
 Context {Ledger : Type}.
 Print generate_proof_2.
+
+Hint Unfold
+  onlyOwners_left
+  onlyOwners
+  calcUnlocked
+  calcUnlocked_right 
+   : unfolderDb.
+
+Hint Unfold 
+   (* upd_ledger_fields *)
+   tvm_transfer_left 
+   new_lvalueL
+   wrapURValueL
+   wrapURExpressionL
+   wrapULExpressionL
+   ursus_call_with_argsL
+   wrapULExpression 
+   rvalued_call_with_argsL
+   URValueP0_RValuedWithArgsL
+   UExpressionP0_LedgerableWithArgsL
+   URValueP_Next_URValueDWithArgsL
+   UExpressionP_Next_LedgerableWithRArgsL
+   UExpressionP_Next_LedgerableWithLArgsL
+   sInjectL
+   ULtoRValueL
+   tvm_transfer
+   (* send_internal_message_
+   send_internal_message
+   send_internal_message_left
+   send_internal_message_pre *)
+   suicide_left
+   suicide
+       : unfolderDb.
+Print tvm_transfer.
+ 
 
 Definition claim_exec_P : forall (l : LedgerLRecord) poolId,
   {l' | l' = exec_state (Uinterpreter (claim poolId)) l}.
 Proof.
    intros.
-   generate_proof_2 claim.
+   unfold claim.
+   autounfold with unfolderDb.
+   fold XBool XUInteger XMaybe XList XProd XHMap.
+   idtac "Start auto_build_P";
+   repeat auto_build_P; idtac "auto_build_P is successful".
 Defined.
-Print claim_exec_P.
+
 
 Definition claim_exec_trm : forall (l : LedgerLRecord) (poolId : uint256), LedgerLRecord.
 intros.

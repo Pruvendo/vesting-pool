@@ -64,7 +64,7 @@ Elpi Db generator.db lp:{{
   pred get_fun i:string, o:term.
   get_fun Name Body :-
     coq.locate Name C,
-   Body = global C,
+    Body = global C,
   end.
 
   pred proj1_sig i:term, o:term.
