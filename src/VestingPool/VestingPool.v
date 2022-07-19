@@ -189,7 +189,7 @@ Require Import UMLang.UrsusLib.
 Require Import UMLang.ExecGenerator.
 Require Import UMLang.ExecGen.GenFlags.
 Require Import UMLang.ExecGen.ExecGenDefs.
-Require Import Generator.Generator.
+Require Import Generator.Generator Generator.Tactics.
 
 Context {Ledger : Type}.
 Print generate_proof_2.
@@ -219,38 +219,47 @@ Hint Unfold
    sInjectL
    ULtoRValueL
    tvm_transfer
-   (* send_internal_message_
+   send_internal_message_
    send_internal_message
    send_internal_message_left
-   send_internal_message_pre *)
+   send_internal_message_pre
    suicide_left
+   _defaultMessageQueue
    suicide
        : unfolderDb.
-Print tvm_transfer.
+
+Generate_Super_Exec tvm_transfer.
  
 
-Definition claim_exec_P : forall (l : LedgerLRecord) poolId,
-  {l' | l' = exec_state (Uinterpreter (claim poolId)) l}.
+Definition claim_exec_P : forall (l : LedgerLRecord) dest value bounce flags,
+  {l' | l' = exec_state (Uinterpreter (tvm_transfer dest value bounce flags)) l}.
 Proof.
    intros.
-   unfold claim.
+   unfold tvm_transfer.
    autounfold with unfolderDb.
    fold XBool XUInteger XMaybe XList XProd XHMap.
    idtac "Start auto_build_P";
    repeat auto_build_P; idtac "auto_build_P is successful".
 Defined.
 
+Print tvm_transfer_left.
 
-Definition claim_exec_trm : forall (l : LedgerLRecord) (poolId : uint256), LedgerLRecord.
+Definition claim_exec_trm : forall (l : LedgerLRecord)
+   (dest : address) (value : uint128)
+   (bounce : boolean) (flags : uint16), LedgerLRecord.
 intros.
-let_term_of_2 claim_exec_P (claim_exec_P l poolId).
+let_term_of_2 claim_exec_P (claim_exec_P l dest value bounce flags).
 Defined.
 (* Print claim_exec. *)
 
-Definition claim_exec : forall (l : LedgerLRecord) (poolId : uint256), LedgerLRecord.
+Definition claim_exec : forall (l : LedgerLRecord)
+  (dest : address) (value : uint128)
+(bounce : boolean) (flags : uint16), LedgerLRecord.
 intros.
-flat_term_of_2 claim_exec_trm (claim_exec_trm l poolId).
+flat_term_of_2 claim_exec_trm (claim_exec_trm l dest value bounce flags).
 Defined.
+
+Print claim_exec.
 
 Definition claim_exec_proof : forall (l : LedgerLRecord) (poolId : uint256), 
  claim_exec l poolId =  exec_state (Uinterpreter (claim poolId)) l.
