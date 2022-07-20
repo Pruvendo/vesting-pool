@@ -203,7 +203,7 @@ Hint Unfold
 
 Hint Unfold 
    (* upd_ledger_fields *)
-   tvm_transfer_left 
+   (* tvm_transfer_left  *)
    new_lvalueL
    wrapURValueL
    wrapURExpressionL
@@ -219,17 +219,18 @@ Hint Unfold
    sInjectL
    ULtoRValueL
    (* tvm_transfer *)
-   (* send_internal_message_ *)
-   (* send_internal_message *)
-   (* send_internal_message_left *)
-   (* send_internal_message_pre *)
+   send_internal_message_
+   send_internal_message
+   send_internal_message_left
+   send_internal_message_pre
    suicide_left
    _defaultMessageQueue
    suicide
        : unfolderDb.
 
-(* Definition tvm_transfer' := fun x1 x2 x3 x4 => @tvm_transfer LedgerLRecord ContractLRecord LocalStateLRecord
-MessagesAndEventsLRecord LedgerLLedgerClass _defaultMessageQueue x1 x2 x3 x4. *)
+Definition tvm_transfer' :=  Eval cbv [tvm_transfer] in fun x0 x1 x2 x3 x4 => @tvm_transfer LedgerLRecord ContractLRecord LocalStateLRecord
+MessagesAndEventsLRecord LedgerLLedgerClass x0 x1 x2 x3 x4.
+
 
 Definition defLocalState := Eval hnf in default : LocalStateLRecord.
 Definition defMessagesAndEvents := Eval hnf in default : MessagesAndEventsLRecord.
@@ -243,6 +244,13 @@ Ltac elpi_define_execs :=
     ContractLRecord
     VMStateLRecord.
 
+Generate_Super_Exec tvm_transfer'.
+Print tvm_transfer'exec.
+(* Compute_Super_Exec tvm_transfer'. *)
+
+Lemma tvm_transferE : @tvm_transfer _ _ _ _ _ = tvm_transfer'.
+Proof. reflexivity. Qed.
+
 (* Definition tvm_transfer_left' := fun x1 x2 x3 x4 x5 => @tvm_transfer_left LedgerLRecord ContractLRecord LocalStateLRecord
 MessagesAndEventsLRecord LedgerLLedgerClass true true true true x1 x2 x3 x4 x5 PhantomType. *)
     
@@ -250,7 +258,7 @@ MessagesAndEventsLRecord LedgerLLedgerClass true true true true x1 x2 x3 x4 x5 P
 (* Arguments tvm_transfer' /. *)
 (* Check tvm_transfer_left'. *)
 
-(* Generate_Super_Exec tvm_transfer_left'.
+(* 
 Compute_Super_Exec tvm_transfer'.
 Print tvm_transfer'exec.
 
@@ -267,22 +275,66 @@ Proof.
    unfold claim.
    autounfold with unfolderDb.
    fold XBool XUInteger XMaybe XList XProd XHMap.
-   idtac "Start auto_build_P";
-   repeat auto_build_P; idtac "auto_build_P is successful".
+   rewrite ?tvm_transferE.
+   auto_build_P.
+   1,3: repeat auto_build_P.
+   auto_build_P.
+   1,3: repeat auto_build_P.
+   auto_build_P.
+   1: repeat auto_build_P.
+   auto_build_P.
+   1: repeat auto_build_P.
+   auto_build_P.
+   1,3: repeat auto_build_P.
+   auto_build_P.
+   1,3: repeat auto_build_P.   
+   auto_build_P.
+   1,3: repeat auto_build_P.
+   auto_build_P.
+   1,3: repeat auto_build_P.
+   auto_build_P.
+   1,3: repeat auto_build_P.
+   auto_build_P.
+   1,3: repeat auto_build_P.
+   auto_build_P.
+   2,3: repeat auto_build_P.
+   auto_build_P.
+   1,3,4: repeat auto_build_P.
+   auto_build_P.
+   auto_build_P.
+   auto_build_P.
+   1,2: repeat auto_build_P.
+   auto_build_P.
+   (* apply new tactic *)
+   Check tvm_transfer_left.v
+   auto_build_P.
+   auto_build_P.
+   auto_build_P.
+   auto_build_P.
+   1,2: repeat auto_build_P.
+   auto_build_P.
+   1,2,4-5: repeat auto_build_P.
+   auto_build_P.
+   1-2: repeat auto_build_P.
+   auto_build_P.
+   1-2: repeat auto_build_P.
+   auto_build_P.
+   eexists.
+   apply tvm_transfer'execE.
 Defined.
 
 Definition claim_exec_trm : forall (l : LedgerLRecord) (poolId :uint256), LedgerLRecord.
 intros.
 let_term_of_2 claim_exec_P (claim_exec_P l poolId).
 Defined.
-
-Print "Hello world!".
 (* Print claim_exec. *)
 
 Definition claim_exec : forall (l : LedgerLRecord) (poolId : uint256), LedgerLRecord.
 intros.
 flat_term_of_2 claim_exec_trm (claim_exec_trm l poolId).
 Defined.
+
+Print claim_exec.
 
 Definition claim_exec_proof : forall (l : LedgerLRecord) (poolId : uint256), 
  claim_exec l poolId =  exec_state (Uinterpreter (claim poolId)) l.
