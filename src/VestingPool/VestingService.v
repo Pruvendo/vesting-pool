@@ -351,22 +351,6 @@ Require Import UMLang.ExecGen.GenFlags.
 Require Import UMLang.ExecGen.ExecGenDefs.
 Locate "IVestingPoolPtr".
 
-
-Definition create_pool : forall l l' amount cliffMonths vestingMonths recipient claimers claimersMap addr  (poolId : uint256), 
- false = isError (eval_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient claimers)) l) -> 
- l' = exec_state (Uinterpreter (createPool amount cliffMonths vestingMonths recipient claimers)) l ->
- let mes_cons := (IVestingPool._constructor amount cliffMonths vestingMonths recipient claimersMap) in
- let mes := OutgoingInternalMessage  (Build_XUBInteger 0, (true, Build_XUBInteger 64)) mes_cons  in
-   isMessageSent mes addr 0 
-   (toValue (eval_state (sRReader (ULtoRValue IVestingPool_left)) l')) = true.
-Proof.
-Abort.
-
-(* 
-   addr = toValue (eval_state (sRReader || m_recipient || ) l) ->
-   value = fst (toValue (eval_state (sRReader || calcUnlocked ( ) || ) l)) ->
-
- *)
 Ursus Definition constructor (poolImage :  cell_): public PhantomType true .
   :: (onlyOwner  _) .
   :: (accept  _) .

@@ -27,6 +27,7 @@ Require Import UrsusTVM.Solidity.tvmCells.
 Require Import UrsusDefinitions.
 Require Import UrsusDefinitions2.
 
+
 Import UrsusNotations.
 Local Open Scope xlist_scope.
 Local Open Scope record.
@@ -185,283 +186,6 @@ Ursus Definition claim (poolId : uint256) : external PhantomType true.
 Defined.
 Sync. 
 
-Require Import UMLang.UrsusLib.
-Require Import UMLang.ExecGenerator.
-Require Import UMLang.ExecGen.GenFlags.
-Require Import UMLang.ExecGen.ExecGenDefs.
-Require Import Generator.Generator Generator.Tactics.
-
-Context {Ledger : Type}.
-Print generate_proof_2.
-
-Hint Unfold
-  onlyOwners_left
-  onlyOwners
-  calcUnlocked
-  calcUnlocked_right 
-   : unfolderDb.
-
-Hint Unfold 
-   (* upd_ledger_fields *)
-   (* tvm_transfer_left  *)
-   new_lvalueL
-   wrapURValueL
-   wrapURExpressionL
-   wrapULExpressionL
-   ursus_call_with_argsL
-   wrapULExpression 
-   rvalued_call_with_argsL
-   URValueP0_RValuedWithArgsL
-   UExpressionP0_LedgerableWithArgsL
-   URValueP_Next_URValueDWithArgsL
-   UExpressionP_Next_LedgerableWithRArgsL
-   UExpressionP_Next_LedgerableWithLArgsL
-   sInjectL
-   ULtoRValueL
-   (* tvm_transfer *)
-   send_internal_message_
-   send_internal_message
-   send_internal_message_left
-   send_internal_message_pre
-   suicide_left
-   _defaultMessageQueue
-   suicide
-       : unfolderDb.
-
-Definition tvm_transfer' :=  Eval cbv [tvm_transfer] in fun x0 x1 x2 x3 x4 => @tvm_transfer LedgerLRecord ContractLRecord LocalStateLRecord
-MessagesAndEventsLRecord LedgerLLedgerClass x0 x1 x2 x3 x4.
-
-
-Definition defLocalState := Eval hnf in default : LocalStateLRecord.
-Definition defMessagesAndEvents := Eval hnf in default : MessagesAndEventsLRecord.
-Opaque LedgerLRecord N.add N.ltb N.sub N.leb N.min N.mul N.div N.land Util.P.
-
-Ltac elpi_define_execs := 
-  elpi_define_execs_pre
-    LedgerLRecord
-    MessagesAndEventsLRecord 
-    LocalStateLRecord
-    ContractLRecord
-    VMStateLRecord.
-
-Generate_Super_Exec tvm_transfer'.
-Print tvm_transfer'exec.
-(* Compute_Super_Exec tvm_transfer'. *)
-
-Lemma tvm_transferE : @tvm_transfer _ _ _ _ _ = tvm_transfer'.
-Proof. reflexivity. Qed.
-
-(* Definition tvm_transfer_left' := fun x1 x2 x3 x4 x5 => @tvm_transfer_left LedgerLRecord ContractLRecord LocalStateLRecord
-MessagesAndEventsLRecord LedgerLLedgerClass true true true true x1 x2 x3 x4 x5 PhantomType. *)
-    
-
-(* Arguments tvm_transfer' /. *)
-(* Check tvm_transfer_left'. *)
-
-(* 
-Compute_Super_Exec tvm_transfer'.
-Print tvm_transfer'exec.
-
-Check tvm_transfer.
-
-Goal tvm_transferexec_trm.
-unfold tvm_transferexec_trm. *)
- 
-
-Definition claim_exec_P : forall (l : LedgerLRecord) poolId,
-  {l' | l' = exec_state (Uinterpreter (claim poolId)) l}.
-Proof.
-   intros.
-   unfold claim.
-   autounfold with unfolderDb.
-   fold XBool XUInteger XMaybe XList XProd XHMap.
-   rewrite ?tvm_transferE.
-   auto_build_P.
-   1,3: repeat auto_build_P.
-   auto_build_P.
-   1,3: repeat auto_build_P.
-   auto_build_P.
-   1: repeat auto_build_P.
-   auto_build_P.
-   1: repeat auto_build_P.
-   auto_build_P.
-   1,3: repeat auto_build_P.
-   auto_build_P.
-   1,3: repeat auto_build_P.   
-   auto_build_P.
-   1,3: repeat auto_build_P.
-   auto_build_P.
-   1,3: repeat auto_build_P.
-   auto_build_P.
-   1,3: repeat auto_build_P.
-   auto_build_P.
-   1,3: repeat auto_build_P.
-   auto_build_P.
-   2,3: repeat auto_build_P.
-   auto_build_P.
-   1,3,4: repeat auto_build_P.
-   auto_build_P.
-   auto_build_P.
-   auto_build_P.
-   1,2: repeat auto_build_P.
-   auto_build_P.
-   (* apply new tactic *)
-   Check tvm_transfer_left.v
-   auto_build_P.
-   auto_build_P.
-   auto_build_P.
-   auto_build_P.
-   1,2: repeat auto_build_P.
-   auto_build_P.
-   1,2,4-5: repeat auto_build_P.
-   auto_build_P.
-   1-2: repeat auto_build_P.
-   auto_build_P.
-   1-2: repeat auto_build_P.
-   auto_build_P.
-   eexists.
-   apply tvm_transfer'execE.
-Defined.
-
-Definition claim_exec_trm : forall (l : LedgerLRecord) (poolId :uint256), LedgerLRecord.
-intros.
-let_term_of_2 claim_exec_P (claim_exec_P l poolId).
-Defined.
-(* Print claim_exec. *)
-
-Definition claim_exec : forall (l : LedgerLRecord) (poolId : uint256), LedgerLRecord.
-intros.
-flat_term_of_2 claim_exec_trm (claim_exec_trm l poolId).
-Defined.
-
-Print claim_exec.
-
-Definition claim_exec_proof : forall (l : LedgerLRecord) (poolId : uint256), 
- claim_exec l poolId =  exec_state (Uinterpreter (claim poolId)) l.
-intros.
-proof_of_2 claim claim_exec_P (claim_exec_P l poolId).
-Defined.
-Print claim_exec_proof.
-Local Open Scope N_scope.
-Print IDefault_left. (* Тут лежат сообщения дефолтные, но это лвалью, поэтому
-это ульвэль надо как-то преобразовать в рвэлью *)
-
-(* The remaining amount for 
-each successful claim is decreased by the transfer amount to the recipient *)
-
-(* 
-∀ params : eval(claim(params)) = ok(Void) ⟶ 
-(let exit = exec(claim(params)).out.messages in exit.size > 0 ∧
- exit[0].method = transfer ∧
-  exit[0].receiver = params.m_recipient ∧
-   exit[0].value = params.m_remainingValue - exec(claim(params)).this.m_remainingValue) *)
-Require Import FinProof.CommonInstances.
-
-#[global]
-Instance OutgoingMessage_booleq: forall I `{XBoolEquable bool I}, XBoolEquable bool 
-         (OutgoingMessage I).
-intros.
-esplit.
-intros.
-case_eq X; intros; case_eq X0; intros.
-refine (eqb i i0). refine false. refine false.
-refine  (eqb i i1 && eqb i0 i2)%bool.
-Defined.
-
-Definition isMessageSent {I}`{XBoolEquable bool I} (m: OutgoingMessage I) (a: address) (n: N)
-                        (l: XHMap address (XQueue (OutgoingMessage I))) : bool :=
-let subm := q2m (hmapFindWithDefault default a l) in               
-let maxk : option N := xHMapMaxKey subm in 
-match maxk with 
-   | None => false
-   | Some k => 
-      match hmapLookup (k-n) subm with
-      | None => false
-      | Some m' => eqb m m'
-      end
-end. 
-
-#[global, program]
-Instance IDefault_booleq : XBoolEquable bool IDefault.
-Next Obligation.
-destruct H2, H3.
-refine true.
-Defined.
-
-Definition claim_err_P : forall (l : LedgerLRecord) poolId,
-  {l' | l' = isError (eval_state (Uinterpreter (claim poolId)) l)}.
-Proof.
-   intros.
-   generate_proof_2 claim.
-Defined.
-
-
-Definition claim_err_P_trm : forall (l : LedgerLRecord) (poolId : uint256), bool.
-intros.
-let_term_of_2 claim_err_P (claim_err_P l poolId).
-Defined.
-Print claim_err_P_trm.
-
-Definition claim_err : forall (l : LedgerLRecord) (poolId : uint256), bool.
-intros.
-flat_term_of_2 claim_err_P_trm (claim_err_P_trm l poolId).
-Defined.
-Print claim_err.
-
-Lemma claim_err_prf : forall (l : LedgerLRecord) (poolId : uint256), 
-    claim_err l poolId = isError (eval_state (Uinterpreter (claim poolId)) l).
-Proof.
-   intros.
-   proof_of_2 claim_err claim_err_P (claim_err_P l poolId).
-Qed.
-
-Tactic Notation "noarith" "compute" "-" ident(ln) := (
-  compute -[N.add N.ltb N.sub N.leb N.min N.mul N.div ln]
-).
-
-Tactic Notation "noarith" "compute" "in" hyp(H) := (
-  compute -[N.add N.ltb N.sub N.leb N.min N.mul N.div] in H
-).
-Require Import ssreflect.
-Tactic Notation "generate_exec" := (
-  let P := fresh "P" in
-  let eq := fresh "eq" in
-  match goal with |- ?t = _ => introduce t as P;
-  [
-    fold XBool XUInteger XMaybe XList XProd XHMap;
-    repeat auto_build_P
-  | extract_eq_flat of P as eq term L;
-    rewrite -eq ; clear eq
-  ]
-  end).
-
-Lemma claim_errE : forall (l : LedgerLRecord) (poolId : uint256),
-   let id_ : uint256 := toValue (eval_state (sRReader || id || ) l) in 
-   (eqb poolId id_) = true ->
-   toValue (eval_state (sRReader || {URScalar poolId } == id ||) l) = true ->
-   claim_err l poolId = false.
-Proof.
-   intros.
-   remember (claim_err l poolId) as er.
-   cbv beta delta [claim_err] in Heqer.
-   rewrite Heqer.
-   rewrite H3. auto.
-Qed.
-
-(* Definition claim_exec_proof : forall (l : LedgerLRecord) (poolId : uint256), 
- claim_exec l poolId =  exec_state (Uinterpreter (claim poolId)) l.
-intros.
-proof_of_2 claim claim_exec_P (claim_exec_P l poolId).
-Defined.
-Print claim_exec_proof.
-Local Open Scope N_scope.
- *)
-Check (EmptyMessage IDefault (Build_XUBInteger 0, (false, Build_XUBInteger 64))).
-(*Print isMessageSent.
- *)
-
-
-
 (* VestLib *)
 Ursus Definition calcPoolConstructorFee (vestingMonths :  uint8): public ( uint128) false .
    :://return_ (((ι (#{vestingMonths}) * FEE_CLAIM) + CONSTRUCTOR_GAS) + STORAGE_FEE) |.
@@ -504,6 +228,45 @@ Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vesting
    :://return_ {} |.
 Defined.
 Sync. 
+
+
+Require Import UMLang.UrsusLib.
+Require Import UMLang.ExecGenerator.
+Require Import UMLang.ExecGen.GenFlags.
+Require Import UMLang.ExecGen.ExecGenDefs.
+
+Require Import FinProof.CommonInstances.
+
+#[global]
+Instance OutgoingMessage_booleq: forall I `{XBoolEquable bool I}, XBoolEquable bool 
+         (OutgoingMessage I).
+intros.
+esplit.
+intros.
+case_eq X; intros; case_eq X0; intros.
+refine (eqb i i0). refine false. refine false.
+refine  (eqb i i1 && eqb i0 i2)%bool.
+Defined.
+
+Definition isMessageSent {I}`{XBoolEquable bool I} (m: OutgoingMessage I) (a: address) (n: N)
+                        (l: XHMap address (XQueue (OutgoingMessage I))) : bool :=
+let subm := q2m (hmapFindWithDefault default a l) in               
+let maxk : option N := xHMapMaxKey subm in 
+match maxk with 
+   | None => false
+   | Some k => 
+      match hmapLookup (k-n) subm with
+      | None => false
+      | Some m' => eqb m m'
+      end
+end. 
+
+#[global, program]
+Instance IDefault_booleq : XBoolEquable bool IDefault.
+Next Obligation.
+destruct H2, H3.
+refine true.
+Defined.
 
 (*The value of pool creation must cover the vesting amount as well as following fee : for pool creation, for each claim, for storage*)
 Axiom GVS_06 : forall l l' (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )),
