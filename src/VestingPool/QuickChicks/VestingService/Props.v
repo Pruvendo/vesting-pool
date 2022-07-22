@@ -73,12 +73,12 @@ toValue (eval_state (sRReader || msg->sender  || ) l') = default ->
 isError (eval_state (Uinterpreter (createPool rec def amount cliffMonths vestingMonths recipient claimers)) l) = true.
 
 (* Anybody non-empty can be included into the client public key list *)
-Definition GVS_02 l l' (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers claimers' :  mapping uint256 uint256)
+Definition GVS_02 l (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers claimers' :  mapping uint256 uint256)
   : Prop :=
 isError (eval_state (Uinterpreter (createPool rec def amount cliffMonths vestingMonths recipient claimers)) l) = false ->
 (* TODO claimers->length() = 0 ->
 claimers->length() < MAX -> *)
-isError (eval_state (Uinterpreter (createPool rec def amount cliffMonths vestingMonths recipient claimers')) l') = false.
+isError (eval_state (Uinterpreter (createPool rec def amount cliffMonths vestingMonths recipient claimers')) l) = false.
 
  (*At least one client must exists*)
 Definition GVS_03 l (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping uint256 uint256)

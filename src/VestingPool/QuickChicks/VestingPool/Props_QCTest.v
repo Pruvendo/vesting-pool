@@ -58,38 +58,81 @@ Require Import VestingPool.Props.
 Require Import VestingPool.VestingPool.
 Import VestingPoolContract.
 
+Require Import UMLang.ExecGenerator.
+
 Definition GVS_06_propb l
     (amount :  uint128) 
     (cliffMonths :  uint8) 
     (vestingMonths :  uint8) 
     (recipient :  address) 
     (claimers :  mapping uint256 boolean)
-    ( pk: uint256 )
-    ( mpk: uint256) 
-    ( mn : uint32 )
+    ( nw : uint32 )
     ( ms: address )
-    ( mv: uint128 )
-    ( tb: uint128 ) : bool :=
-let v0 := {$$ VMStateDefault with VMState_ι_pubkey := pk $$} in 
-let v1 := {$$ v0 with VMState_ι_msg_pubkey := mpk $$} in     
-let v2 := {$$ v1 with VMState_ι_now := mn $$} in
+    ( mv: N ): bool :=
+let v2 := {$$ VMStateDefault with VMState_ι_now := nw $$} in
 let v3 := {$$ v2 with VMState_ι_msg_sender := ms $$} in
-let v4 := {$$ v3 with VMState_ι_msg_value := mv $$} in
-let v5 := {$$ v4 with VMState_ι_balance := tb $$} in
+let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
 GVS_06 {$$ 
         {$$ LedgerDefault with Ledger_MainState := l $$}
-                            with Ledger_VMState := v5 $$}
+                            with Ledger_VMState := v4 $$}
        amount cliffMonths vestingMonths recipient claimers ? .
 
+(* passes *)
+(*QuickCheck GVS_06_propb.*)
+
 Definition GVS_09_propb l
-    (poolId : uint256) : bool :=
-GVS_09 {$$ LedgerDefault with Ledger_MainState := l $$}
-       poolId ? .
+    (amount :  uint128)
+    (cliffMonths :  uint8) 
+    (vestingMonths :  uint8) 
+    (recipient :  address) 
+    (claimers :  mapping uint256 boolean)
+    (poolId : uint256)
+    (mpk: uint256)
+    (nw: uint32)
+    (acc : bool)
+    ( ms: address )
+    ( mv: N ) : bool :=
+let v0 := {$$ VMStateDefault with VMState_ι_msg_pubkey := mpk $$} in     
+let v1 := {$$ v0 with VMState_ι_now := nw $$} in
+let v2 := {$$ v1 with VMState_ι_accepted := acc $$} in
+let v3 := {$$ v2 with VMState_ι_msg_sender := ms $$} in
+let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
+
+GVS_09 {$$ 
+         {$$ LedgerDefault with Ledger_MainState := l $$}
+                    with Ledger_VMState := v4 $$}
+       amount cliffMonths vestingMonths recipient claimers poolId ? .
+
+(* passes *)
+(* TODO: now? необязательно, но для полноты *)
+(*QuickCheck GVS_09_propb.*)
 
 Definition GVS_10_propb l
-    (poolId : uint256) : bool :=
-GVS_10 {$$ LedgerDefault with Ledger_MainState := l $$}
-       poolId ? .
+    (amount :  uint128) 
+    (cliffMonths :  uint8) 
+    (vestingMonths :  uint8) 
+    (recipient :  address) 
+    (claimers :  mapping uint256 boolean)
+    (poolId : uint256)
+    (mpk: uint256)
+    (nw: uint32)
+    (acc : bool)
+    ( ms: address )
+    ( mv: N ) : bool :=
+let v0 := {$$ VMStateDefault with VMState_ι_msg_pubkey := mpk $$} in     
+let v1 := {$$ v0 with VMState_ι_now := nw $$} in
+let v2 := {$$ v1 with VMState_ι_accepted := acc $$} in
+let v3 := {$$ v2 with VMState_ι_msg_sender := ms $$} in
+let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
+
+GVS_10 {$$ 
+     {$$ LedgerDefault with Ledger_MainState := l $$}
+                with Ledger_VMState := v4 $$}
+   amount cliffMonths vestingMonths recipient claimers poolId ? .
+
+(* ok *)
+(* TODO: now? необязательно, но для полноты *)
+(*QuickCheck GVS_10_propb.*)
 
 Definition GVS_11_propb l
     (amount :  uint128) 
@@ -97,22 +140,69 @@ Definition GVS_11_propb l
     (vestingMonths :  uint8) 
     (recipient :  address) 
     (claimers :  mapping uint256 boolean)
-    ( pk: uint256 )
-    ( mpk: uint256) 
-    ( mn : uint32 )
+    (mpk: uint256)
+    (nw: uint32)
+    (acc : bool)
     ( ms: address )
-    ( mv: uint128 )
-    ( tb: uint128 ) : bool :=
-let v0 := {$$ VMStateDefault with VMState_ι_pubkey := pk $$} in 
-let v1 := {$$ v0 with VMState_ι_msg_pubkey := mpk $$} in     
-let v2 := {$$ v1 with VMState_ι_now := mn $$} in
+    ( mv: N ):=
+let v0 := {$$ VMStateDefault with VMState_ι_msg_pubkey := mpk $$} in     
+let v1 := {$$ v0 with VMState_ι_now := nw $$} in
+let v2 := {$$ v1 with VMState_ι_accepted := acc $$} in
 let v3 := {$$ v2 with VMState_ι_msg_sender := ms $$} in
-let v4 := {$$ v3 with VMState_ι_msg_value := mv $$} in
-let v5 := {$$ v4 with VMState_ι_balance := tb $$} in
+let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
 GVS_11 {$$ 
-        {$$ LedgerDefault with Ledger_MainState := l $$}
-                            with Ledger_VMState := v5 $$}
-       amount cliffMonths vestingMonths recipient claimers ? .
+    {$$ LedgerDefault with Ledger_MainState := l $$}
+                        with Ledger_VMState := v4 $$}
+    amount cliffMonths vestingMonths recipient claimers ? .
+
+(* ok *)
+(*QuickCheck GVS_11_propb.*)
+
+(* some valid input data -- keep it here just in case
+
+Import ListNotations.
+
+Definition l : (XUBInteger 256 *
+(Z * XUBInteger 256 *
+ (XUBInteger 32 *
+  (XUBInteger 32 *
+   (XUBInteger 32 *
+    (XUBInteger 32 *
+     (XUBInteger 128 *
+      (XUBInteger 128 *
+       (XUBInteger 128 *
+        (Z * XUBInteger 256 *
+         CommonInstances.ListStructure (XUBInteger 256 * bool)
+           CommonInstances.Map)%xprod)%xprod)%xprod)%xprod)%xprod)%xprod)%xprod)%xprod)%xprod)%xprod := 
+    xpair (Build_XUBInteger 0) (xpair (0%Z,Build_XUBInteger 0) 
+    (xpair (Build_XUBInteger 0) (xpair (Build_XUBInteger 0) (xpair (Build_XUBInteger 0) (xpair (Build_XUBInteger 0) (xpair (Build_XUBInteger 0) (xpair (Build_XUBInteger 0) (xpair (Build_XUBInteger 0) (xpair (0%Z,(Build_XUBInteger 0)) (CommonInstances.wrap _ ([((Build_XUBInteger 4),false); ((Build_XUBInteger 2),false); ((Build_XUBInteger 1),false); ((Build_XUBInteger 0),false)])%list)))))))))).
+Compute address.
+Definition addr : address := (0%Z, Build_XUBInteger 0).
+Definition v4 := let v0 := {$$ VMStateDefault with VMState_ι_msg_pubkey := Build_XUBInteger 0 $$} in     
+let v1 := {$$ v0 with VMState_ι_now := Build_XUBInteger 0 $$} in
+let v2 := {$$ v1 with VMState_ι_accepted := true $$} in
+let v3 := {$$ v2 with VMState_ι_msg_sender := (0%Z,Build_XUBInteger 1) $$} in
+{$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * 5) $$}.
+
+Definition lx := {$$ 
+{$$ LedgerDefault with Ledger_MainState := l $$}
+                    with Ledger_VMState := v4 $$}.
+Definition l' := launch lx
+(Build_XUBInteger 5) (Build_XUBInteger 3) (Build_XUBInteger 0)
+ addr (CommonInstances.wrap CommonInstances.Map ([::])%list).
+Compute l'.
+Compute (isError (eval_state (Uinterpreter (constructor rec def 
+(Build_XUBInteger 5) (Build_XUBInteger 3) (Build_XUBInteger 0)
+ addr (CommonInstances.wrap CommonInstances.Map ([::])%list))) lx)).
+ Compute (uint2N (toValue (eval_state (sRReader (now) ) l'))).
+Compute (uint2N (toValue (eval_state (sRReader (m_vestingEnd_right rec def) ) l'))).
+
+Compute GVS_11_propb l 
+    (Build_XUBInteger 5) (Build_XUBInteger 3) (Build_XUBInteger 0)
+    (0%Z, Build_XUBInteger 0) (CommonInstances.wrap CommonInstances.Map ([::])%list)
+    (Build_XUBInteger 0) (Build_XUBInteger 1) true (0%Z, Build_XUBInteger 1) 4.
+QuickCheck GVS_11_propb.
+*)
 
 Definition GVS_12_1_propb l
     (amount :  uint128) 
@@ -120,72 +210,207 @@ Definition GVS_12_1_propb l
     (vestingMonths :  uint8) 
     (recipient :  address) 
     (claimers :  mapping uint256 boolean)
-    ( pk: uint256 )
-    ( mpk: uint256) 
-    ( mn : uint32 )
+    (mpk: uint256)
+    (nw: uint32)
+    (acc : bool)
     ( ms: address )
-    ( mv: uint128 )
+    ( mv: N )
     ( tb: uint128 ) : bool :=
-let v0 := {$$ VMStateDefault with VMState_ι_pubkey := pk $$} in 
-let v1 := {$$ v0 with VMState_ι_msg_pubkey := mpk $$} in     
-let v2 := {$$ v1 with VMState_ι_now := mn $$} in
-let v3 := {$$ v2 with VMState_ι_msg_sender := ms $$} in
-let v4 := {$$ v3 with VMState_ι_msg_value := mv $$} in
-let v5 := {$$ v4 with VMState_ι_balance := tb $$} in
+    let v0 := {$$ VMStateDefault with VMState_ι_msg_pubkey := mpk $$} in     
+    let v1 := {$$ v0 with VMState_ι_now := nw $$} in
+    let v2 := {$$ v1 with VMState_ι_accepted := acc $$} in
+    let v3 := {$$ v2 with VMState_ι_msg_sender := ms $$} in
+    let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
+    let v5 := {$$ v4 with VMState_ι_balance := tb $$} in
 GVS_12_1 {$$ 
         {$$ LedgerDefault with Ledger_MainState := l $$}
                             with Ledger_VMState := v5 $$}
        amount cliffMonths vestingMonths recipient claimers ? .
 
+(* ??? fails *)
+(*QuickCheck GVS_12_1_propb.*)
+
 Definition GVS_12_2_propb l
+    (amount :  uint128) 
+    (cliffMonths :  uint8) 
+    (vestingMonths :  uint8) 
+    (recipient :  address) 
+    (claimers :  mapping uint256 boolean)
+    (mpk: uint256)
+    (nw: uint32)
+    (acc : bool)
+    ( ms: address )
+    ( mv: N )
     (poolId : uint256) : bool :=
-GVS_12_2 {$$ LedgerDefault with Ledger_MainState := l $$}
-       poolId ? .
+let v0 := {$$ VMStateDefault with VMState_ι_msg_pubkey := mpk $$} in     
+let v1 := {$$ v0 with VMState_ι_now := nw $$} in
+let v2 := {$$ v1 with VMState_ι_accepted := acc $$} in
+let v3 := {$$ v2 with VMState_ι_msg_sender := ms $$} in
+let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
+
+GVS_12_2 {$$ 
+            {$$ LedgerDefault with Ledger_MainState := l $$}
+                    with Ledger_VMState := v4 $$}
+        amount cliffMonths vestingMonths recipient claimers poolId ? .
+
+(* TODO: now? необязательно, но для полноты *)
+(*QuickCheck GVS_12_2_propb.*)
 
 Definition GVS_13_propb l
+    (amount :  uint128) 
+    (cliffMonths :  uint8) 
+    (vestingMonths :  uint8) 
+    (recipient :  address) 
+    (claimers :  mapping uint256 boolean)
+    (mpk: uint256)
+    (nw: uint32)
+    (acc : bool)
+    ( ms: address )
+    ( mv: N )
     n (poolId : uint256) : bool :=
-GVS_13 {$$ LedgerDefault with Ledger_MainState := l $$}
-       n poolId ? .
+let v0 := {$$ VMStateDefault with VMState_ι_msg_pubkey := mpk $$} in     
+let v1 := {$$ v0 with VMState_ι_now := nw $$} in
+let v2 := {$$ v1 with VMState_ι_accepted := acc $$} in
+let v3 := {$$ v2 with VMState_ι_msg_sender := ms $$} in
+let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
+
+GVS_13 {$$ 
+            {$$ LedgerDefault with Ledger_MainState := l $$}
+                    with Ledger_VMState := v4 $$}
+        amount cliffMonths vestingMonths recipient claimers n poolId ? .
+
+(* TODO: now!!! *)
+(*QuickCheck GVS_13_propb.*)
 
 Definition GVS_14_propb l
+    (amount :  uint128) 
+    (cliffMonths :  uint8) 
+    (vestingMonths :  uint8) 
+    (recipient :  address) 
+    (claimers :  mapping uint256 boolean)
+    (mpk: uint256)
+    (nw: uint32)
+    (acc : bool)
+    ( ms: address )
+    ( mv: N )
     (poolId : uint256) : bool :=
-GVS_14 {$$ LedgerDefault with Ledger_MainState := l $$}
-       poolId ? .
+let v0 := {$$ VMStateDefault with VMState_ι_msg_pubkey := mpk $$} in     
+let v1 := {$$ v0 with VMState_ι_now := nw $$} in
+let v2 := {$$ v1 with VMState_ι_accepted := acc $$} in
+let v3 := {$$ v2 with VMState_ι_msg_sender := ms $$} in
+let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
+
+GVS_14 {$$ 
+            {$$ LedgerDefault with Ledger_MainState := l $$}
+                    with Ledger_VMState := v4 $$}
+        amount cliffMonths vestingMonths recipient claimers poolId ? .
+
+(* TODO: now *)
+(* TODO: pubkey-claimers connection? *)
+(* fails: to investigate *)
+(*QuickCheck GVS_14_propb.*)
 
 Definition GVS_15_propb l
+    (amount :  uint128) 
+    (cliffMonths :  uint8) 
+    (vestingMonths :  uint8) 
+    (recipient :  address) 
+    (claimers :  mapping uint256 boolean)
+    (mpk: uint256)
+    (nw: uint32)
+    (acc : bool)
+    ( ms: address )
+    ( mv: N )
     (poolId : uint256) : bool :=
-GVS_15 {$$ LedgerDefault with Ledger_MainState := l $$}
-       poolId ? .
+let v0 := {$$ VMStateDefault with VMState_ι_msg_pubkey := mpk $$} in     
+let v1 := {$$ v0 with VMState_ι_now := nw $$} in
+let v2 := {$$ v1 with VMState_ι_accepted := acc $$} in
+let v3 := {$$ v2 with VMState_ι_msg_sender := ms $$} in
+let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
+
+GVS_15 {$$ 
+            {$$ LedgerDefault with Ledger_MainState := l $$}
+                    with Ledger_VMState := v4 $$}
+        amount cliffMonths vestingMonths recipient claimers poolId ? .
+
+(* TODO: now!!! *)
+(*QuickCheck GVS_15_propb.*)
 
 Definition GVS_16_propb l
+    (amount :  uint128) 
+    (cliffMonths :  uint8) 
+    (vestingMonths :  uint8) 
+    (recipient :  address) 
+    (claimers :  mapping uint256 boolean)
+    (mpk: uint256)
+    (nw: uint32)
+    (acc : bool)
+    ( ms: address )
+    ( mv: N )
     (poolId : uint256) : bool :=
-GVS_16 {$$ LedgerDefault with Ledger_MainState := l $$}
-       poolId ? .
+let v0 := {$$ VMStateDefault with VMState_ι_msg_pubkey := mpk $$} in     
+let v1 := {$$ v0 with VMState_ι_now := nw $$} in
+let v2 := {$$ v1 with VMState_ι_accepted := acc $$} in
+let v3 := {$$ v2 with VMState_ι_msg_sender := ms $$} in
+let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
+
+GVS_16 {$$ 
+            {$$ LedgerDefault with Ledger_MainState := l $$}
+                    with Ledger_VMState := v4 $$}
+        amount cliffMonths vestingMonths recipient claimers poolId ? .
+
+(* TODO: now!!! *)
+(* fails: to investigate *)
+(*QuickCheck GVS_16_propb.*)
 
 Definition GVS_17_1_propb l
+    (amount :  uint128) 
+    (cliffMonths :  uint8) 
+    (vestingMonths :  uint8) 
+    (recipient :  address) 
+    (claimers :  mapping uint256 boolean)
+    (mpk: uint256)
+    (nw: uint32)
+    (acc : bool)
+    ( ms: address )
+    ( mv: N )
     (poolId : uint256) : bool :=
-GVS_17_1 {$$ LedgerDefault with Ledger_MainState := l $$}
-       poolId ? .
+let v0 := {$$ VMStateDefault with VMState_ι_msg_pubkey := mpk $$} in     
+let v1 := {$$ v0 with VMState_ι_now := nw $$} in
+let v2 := {$$ v1 with VMState_ι_accepted := acc $$} in
+let v3 := {$$ v2 with VMState_ι_msg_sender := ms $$} in
+let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
+
+GVS_17_1 {$$ 
+            {$$ LedgerDefault with Ledger_MainState := l $$}
+                    with Ledger_VMState := v4 $$}
+        amount cliffMonths vestingMonths recipient claimers poolId ? .
+
+(* fails: to investigate *)
+(*QuickCheck GVS_17_1_propb.*)
 
 Definition GVS_18_propb l
+    (amount :  uint128) 
+    (cliffMonths :  uint8) 
+    (vestingMonths :  uint8) 
+    (recipient :  address) 
+    (claimers :  mapping uint256 boolean)
+    (mpk: uint256)
+    (nw: uint32)
+    (acc : bool)
+    ( ms: address )
+    ( mv: N )
     value (poolId : uint256) : bool :=
-GVS_18 {$$ LedgerDefault with Ledger_MainState := l $$}
-       value poolId ? .
+let v0 := {$$ VMStateDefault with VMState_ι_msg_pubkey := mpk $$} in     
+let v1 := {$$ v0 with VMState_ι_now := nw $$} in
+let v2 := {$$ v1 with VMState_ι_accepted := acc $$} in
+let v3 := {$$ v2 with VMState_ι_msg_sender := ms $$} in
+let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
 
-(*
-Extract Constant defNumTests => "10000".
-Extract Constant defSize => "7".
+GVS_18 {$$ 
+            {$$ LedgerDefault with Ledger_MainState := l $$}
+                    with Ledger_VMState := v4 $$}
+        amount cliffMonths vestingMonths recipient claimers value poolId ? .
 
-Time QuickCheck GVS_06_propb.
-Time QuickCheck GVS_09_propb.
-Time QuickCheck GVS_10_propb.
-Time QuickCheck GVS_11_propb.
-Time QuickCheck GVS_12_1_propb.
-Time QuickCheck GVS_12_2_propb.
-Time QuickCheck GVS_13_propb.
-Time QuickCheck GVS_14_propb.
-Time QuickCheck GVS_15_propb.
-Time QuickCheck GVS_16_propb.
-Time QuickCheck GVS_17_1_propb.
-Time QuickCheck GVS_18_propb.
-*)
+(* TODO: now!!! *)
+(*QuickCheck GVS_18_propb.*)

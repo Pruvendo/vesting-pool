@@ -67,22 +67,27 @@ Definition LedgerDefault : LedgerLRecord LocalStateLRecord  := Eval compute in d
 (*The value of pool creation must cover the vesting amount as well as following fee : for pool creation, for each claim, for storage*)
 Definition GVS_06 l (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean ))
   : Prop := 
-uint2N (toValue (eval_state (sRReader || msg->value  || ) l)) > 
+uint2N (toValue (eval_state (sRReader || msg->value  || ) l)) <
 uint2N  amount  + 
  uint2N (toValue (eval_state (sRReader (CONSTRUCTOR_GAS_right rec def) ) l)) + 
  uint2N (toValue (eval_state (sRReader (STORAGE_FEE_right rec def) ) l)) + 
 uint2N (toValue (eval_state (sRReader (FEE_CLAIM_right rec def) ) l)) * uint2N vestingMonths  -> 
 isError (eval_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) l) = true.
 
+Definition launch lst (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean ))  :=
+exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst. 
+  
 (*A list of clients can not be updated after the pool is created*)
-Definition GVS_09 l (poolId : uint256) : Prop :=
+Definition GVS_09 lst (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) (poolId : uint256) : Prop :=
+let l := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst in 
 let l' := exec_state (Uinterpreter (claim rec def poolId)) l in
 let _claimers := toValue (eval_state (sRReader (m_claimers_right rec def)) l) in
 let _claimers' := toValue (eval_state (sRReader (m_claimers_right rec def)) l') in
 _claimers = _claimers'.
 
 (*A  receiver of funds can not be updated after the pool is created.*)
-Definition GVS_10 l (poolId : uint256) : Prop :=
+Definition GVS_10 lst (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) (poolId : uint256) : Prop :=
+let l := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst in 
 let l' := exec_state (Uinterpreter (claim rec def poolId)) l in
 let _recipient := toValue (eval_state (sRReader (m_recipient_right rec def) ) l) in
 let _recipient' := toValue (eval_state (sRReader (m_recipient_right rec def) ) l') in
@@ -102,7 +107,7 @@ toValue (eval_state (sRReader (m_claimers_right rec def) ) l') = claimers /\
 (* m_cliffEnd = params.now + params.cliffMonths * 30 * 86400 *)
 uint2N (toValue (eval_state (sRReader (m_cliffEnd_right rec def) ) l')) = uint2N (toValue (eval_state (sRReader || (now) || ) l)) + uint2N (cliffMonths)*30*86400 /\
 (* m_vestingEnd = params.now + (params.cliffMonths + params.vestingMonths) * 30 * 86400 *)
-uint2N (toValue (eval_state (sRReader (m_vestingEnd_right rec def) ) l')) = uint2N (toValue (eval_state (sRReader || (now) || ) l)) + uint2N (vestingMonths)*30*86400 /\
+uint2N (toValue (eval_state (sRReader (m_vestingEnd_right rec def) ) l')) = uint2N (toValue (eval_state (sRReader || (now) || ) l)) + (uint2N (cliffMonths) + uint2N (vestingMonths))*30*86400 /\
 (* m_totalAmount = params.amount *)
 toValue (eval_state (sRReader (m_totalAmount_right rec def) ) l') = amount /\
 (* m_remainingAmount = params.amount *)
@@ -115,14 +120,16 @@ isError (eval_state (Uinterpreter (constructor rec def amount cliffMonths vestin
 let l' := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) l in
 uint2N (toValue (eval_state (sRReader || tvm->balance () || ) l')) > uint2N amount.
 
-Definition GVS_12_2 l (poolId : uint256) : Prop :=
+Definition GVS_12_2 lst  (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) (poolId : uint256) : Prop :=
+let l := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst in 
 let l' := exec_state (Uinterpreter (claim rec def poolId)) l in
 uint2N (toValue (eval_state (sRReader || tvm->balance () || ) l)) > uint2N (toValue (eval_state (sRReader (m_remainingAmount_right rec def) ) l)) ->
 uint2N (toValue (eval_state (sRReader || tvm->balance () || ) l')) > uint2N (toValue (eval_state (sRReader (m_remainingAmount_right rec def) ) l')).
 
 (*To prevent incorrect usage of the pool it can  transfer only once per time-slot after the first call. The  rest of calls to transfer within a time are rejected.  *)
 (* TODO l' = l' with now' *)
-Definition GVS_13 l n (poolId : uint256) : Prop := 
+Definition GVS_13 lst  (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) n (poolId : uint256) : Prop := 
+let l := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst in 
 let l' := exec_state (Uinterpreter (claim rec def poolId)) l in
 let _now := toValue (eval_state (sRReader || (now) || ) l) in
 let _now' := toValue (eval_state (sRReader || (now) || ) l') in
@@ -137,14 +144,16 @@ isError (eval_state (Uinterpreter (claim rec def poolId)) l) = false ->
 isError (eval_state (Uinterpreter (claim rec def poolId)) l') = true.
 
 (*Only claimers can claim *) 
-Definition GVS_14 l (poolId : uint256) : Prop :=
+Definition GVS_14 lst (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) (poolId : uint256) : Prop :=
+let l := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst in 
 let _msgSender := toValue (eval_state (sRReader || msg->pubkey() || ) l) in
 let _claimers := toValue (eval_state (sRReader (m_claimers_right rec def) ) l) in
  _claimers[_msgSender] = false ->
 isError (eval_state (Uinterpreter (claim rec def poolId)) l) = true.
 
 (* Any attempts to claim during the cliff period must lead to exception *)
-Definition GVS_15 l (poolId : uint256) : Prop :=
+Definition GVS_15 lst (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) (poolId : uint256) : Prop :=
+let l := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst in 
 let _now := toValue (eval_state (sRReader || (now) || ) l) in
 let _cliffEnd := toValue (eval_state (sRReader (m_cliffEnd_right rec def) ) l) in
 (uint2N _now < uint2N _cliffEnd) ->
@@ -153,7 +162,8 @@ isError (eval_state (Uinterpreter (claim rec def poolId)) l) = true.
 (*Any attempt to claim after vestingEnd must lead to sending the rest of the amount to the recipient and the change back to the creator. Also the pool must suicide itself.*)
 (* TODO suicide
 transfer to creator *)
-Definition GVS_16 l (poolId : uint256) : Prop :=
+Definition GVS_16 lst (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) (poolId : uint256) : Prop :=
+ let l := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst in 
  let l' := exec_state (Uinterpreter (claim rec def poolId)) l in
  let _now := toValue (eval_state (sRReader || (now) || ) l) in
  let _vestingEnd := toValue (eval_state (sRReader (m_vestingEnd_right rec def) ) l) in
@@ -167,7 +177,8 @@ Definition GVS_16 l (poolId : uint256) : Prop :=
    (toValue (eval_state (sRReader (ULtoRValue (IDefault_left rec def))) l')) = true.
 
  (* The remaining amount for each successful claim is decreased by the transfer amount to the recipient*)
-Definition GVS_17_1 l (poolId : uint256) : Prop :=
+Definition GVS_17_1 lst (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) (poolId : uint256) : Prop :=
+ let l := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst in 
  let l' := exec_state (Uinterpreter (claim rec def poolId)) l in
  let addr := toValue (eval_state (sRReader (m_recipient_right rec def) ) l) in
  let value := fst (toValue (eval_state (sRReader (calcUnlocked_right rec def ) ) l)) in
@@ -177,9 +188,9 @@ Definition GVS_17_1 l (poolId : uint256) : Prop :=
    (toValue (eval_state (sRReader (ULtoRValue (IDefault_left rec def))) l')) = true.
 
 (* If the current time is after cliff period and before the vesting end (that effectively means that vesting period is more than zero) the amount to vest is calculated by the following formula*)
-Definition GVS_18 l value (poolId : uint256)
+Definition GVS_18 lst (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) value (poolId : uint256)
   : Prop :=
-(* l = exec_state (Uinterpreter (constructor _ _ _ _)) l_default -> *)
+ let l := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst in 
  let l' := exec_state (Uinterpreter (claim rec def poolId)) l in
  let addr := toValue (eval_state (sRReader (m_recipient_right rec def) ) l) in
  let _now := toValue (eval_state (sRReader || (now) || ) l) in

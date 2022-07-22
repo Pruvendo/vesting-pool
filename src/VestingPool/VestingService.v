@@ -68,10 +68,10 @@ IVestingPool ;
 (* Inherits  Modifiers ; *)
 Constants 
 Definition (*VestLib*) MAX_CLAIMERS : uint256 := Build_XUBInteger 10%N
-Definition (*VestLib*) STORAGE_FEE : uint128 := Build_XUBInteger 1000000000(*1 ever*)
-Definition (*VestLib*) CONSTRUCTOR_GAS : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
-Definition (*VestLib*) FEE_CREATE : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
-Definition (*VestLib*) FEE_CLAIM : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
+Definition (*VestLib*) STORAGE_FEE : uint128 := Build_XUBInteger 30 (*1 ever*)
+Definition (*VestLib*) CONSTRUCTOR_GAS : uint128 := Build_XUBInteger 3 (*0.1 ever*)
+Definition (*VestLib*) FEE_CREATE : uint128 := Build_XUBInteger 3 (*0.1 ever*)
+Definition (*VestLib*) FEE_CLAIM : uint128 := Build_XUBInteger 3 (*0.1 ever*)
 Definition ERR_LOW_FEE :uint := 101
 Definition ERR_INVALID_SENDER :uint := 102
 Definition ERR_EMPTY_CELL :uint := 103
@@ -285,6 +285,9 @@ address pool = new VestingPool{
 m_nextId++;
 m_onbounceMap[pool] = msg.sender;
       *)
+(* msg_sender *)
+(* msg_value *)
+(* address *)
 #[override]
 Ursus Definition createPool (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping uint256 uint256): external PhantomType true .
   :: (contractOnly  _) .

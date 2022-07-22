@@ -57,10 +57,10 @@ Sends To
 Constants 
 Definition (*VestingPool*) VESTING_PERIOD : uint32 := Build_XUBInteger (30 * 86400)(*30 days*)
 Definition (*VestLib*) MAX_CLAIMERS : uint256 := Build_XUBInteger 10%N
-Definition (*VestLib*) STORAGE_FEE : uint128 := Build_XUBInteger 1000000000(*1 ever*)
-Definition (*VestLib*)(*VestingPool*) CONSTRUCTOR_GAS : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
-Definition (*VestLib*) FEE_CREATE : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
-Definition (*VestLib*) FEE_CLAIM : uint128 := Build_XUBInteger 100000000 (*0.1 ever*)
+Definition (*VestLib*) STORAGE_FEE : uint128 := Build_XUBInteger 30(*1 ever*)
+Definition (*VestLib*)(*VestingPool*) CONSTRUCTOR_GAS : uint128 := Build_XUBInteger 3 (*0.1 ever*)
+Definition (*VestLib*) FEE_CREATE : uint128 := Build_XUBInteger 3 (*0.1 ever*)
+Definition (*VestLib*) FEE_CLAIM : uint128 := Build_XUBInteger 3 (*0.1 ever*)
 Definition ERR_LOW_FEE : uint := 101
 Definition ERR_INVALID_SENDER : uint := 102
 Definition ERR_EMPTY_CELL : uint := 103
@@ -168,6 +168,10 @@ Ursus Definition onBounce (slice :  slice_): external PhantomType false .
 Defined.
 Sync. 
 
+(* msg_pubkey *)
+(* accept *)
+(* outgoing messages (IDefault) *)
+(* now *)
 #[override]
 Ursus Definition claim (poolId : uint256) : external PhantomType true.
 (* TODO *)
@@ -193,18 +197,20 @@ Ursus Definition calcPoolConstructorFee (vestingMonths :  uint8): public ( uint1
 Defined.
 Sync. 
 
-
+(* msg->sender *)
+(* msg->value *)
+(* tvm now *)
 Ursus Definition constructor (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )): public PhantomType true .
   :: (contractOnly  _) .
   (* TODO *)
   refine {{minValue( #{amount} + (* VestLib *)calcPoolConstructorFee(#{vestingMonths}))  ; {_} }} .
   (* TODO *)
-   ::// new 'service : (  address ) @ "service"  := {} (*tvm->codeSalt(tvm->code())->get()->toSlice()->decode(address) *); _ |.
+   ::// new 'service : (  address ) @ "service"  := msg->sender (*tvm->codeSalt(tvm->code())->get()->toSlice()->decode(address) *); _ |.
    :://require_((!{service} == msg->sender), ERR_INVALID_SENDER) .
    :://m_createdAt := now.
-   :://m_cliffEnd := (m_createdAt + (ι (#{cliffMonths}) * (β #{30}))) .
+   :://m_cliffEnd := (m_createdAt + (ι (#{cliffMonths}) * (β #{30 * 86400}))) .
    lia.
-   :://m_vestingEnd := (m_cliffEnd + (ι (#{vestingMonths}) * (β #{30}))) .
+   :://m_vestingEnd := (m_cliffEnd + (ι (#{vestingMonths}) * (β #{30 * 86400}))) .
    lia.
    :://m_totalAmount := #{amount} .
    :://m_remainingAmount := m_totalAmount .
