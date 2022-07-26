@@ -527,23 +527,6 @@ apply N.leb_gt in Heqb.
 left. lia.
 Defined.
 
-Notation ControlResult := (@ControlResultL) .
-Definition isError {R b} (cr : ControlResult R b) : Prop :=
- match cr with
- | ControlValue _ _ => False
- | _ => True
- end.
-
-#[global]
-Instance isError_Dec {R b}: forall  (cr : ControlResult R b), Dec (isError cr).
-intros.
-esplit.
-unfold decidable.
-dependent destruction cr. 
-now right.
-all: now left.
-Defined.
-
 #[global]
 Instance Dec_equiv : forall {P Q : Prop}, Dec P -> Dec Q -> Dec (P <-> Q) .
 intros.

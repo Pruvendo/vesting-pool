@@ -67,7 +67,7 @@ IVestingPool ;
 (* Контракты *)
 (* Inherits  Modifiers ; *)
 Constants 
-Definition (*VestLib*) MAX_CLAIMERS : uint256 := Build_XUBInteger 10%N
+Definition (*VestLib*) MAX_CLAIMERS : uint256 := Build_XUBInteger 5%N
 Definition (*VestLib*) STORAGE_FEE : uint128 := Build_XUBInteger 30 (*1 ever*)
 Definition (*VestLib*) CONSTRUCTOR_GAS : uint128 := Build_XUBInteger 3 (*0.1 ever*)
 Definition (*VestLib*) FEE_CREATE : uint128 := Build_XUBInteger 3 (*0.1 ever*)
@@ -323,30 +323,6 @@ destruct X, X0.
 Defined.
 
 Require Import FinProof.CommonInstances.
-
-#[global]
-Instance OutgoingMessage_booleq: forall I `{XBoolEquable bool I}, XBoolEquable bool 
-         (OutgoingMessage I).
-intros.
-esplit.
-intros.
-case_eq X; intros; case_eq X0; intros.
-refine (eqb i i0). refine false. refine false.
-refine  (eqb i i1 && eqb i0 i2)%bool.
-Defined.
-
-Definition isMessageSent {I}`{XBoolEquable bool I} (m: OutgoingMessage I) (a: address) (n: N)
-                        (l: XHMap address (XQueue (OutgoingMessage I))) : bool :=
-let subm := q2m (hmapFindWithDefault default a l) in               
-let maxk : option N := xHMapMaxKey subm in 
-match maxk with 
-   | None => false
-   | Some k => 
-      match hmapLookup (k-n) subm with
-      | None => false
-      | Some m' => eqb m m'
-      end
-end.
 
 Require Import UMLang.UrsusLib.
 Require Import UMLang.ExecGenerator.

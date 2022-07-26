@@ -162,7 +162,7 @@ Ursus Definition get : external ( uint256 #  address #  uint32 #  address #  uin
 Defined.
 Sync. 
 
-Ursus Definition onBounce (slice :  slice_): external PhantomType false .
+Ursus Definition onBounce (slice :  slice_): external PhantomType true .
    :://tvm->transfer(creator, (β #{0}), FALSE, (β #{64})) .
    :://return_ {} |.
 Defined.
@@ -183,7 +183,7 @@ Ursus Definition claim (poolId : uint256) : external PhantomType true.
    :://m_remainingAmount -= !{unlocked} .
    :://m_vestingFrom += !{unlockedPeriod} .
    :://tvm->transfer(m_recipient, !{unlocked}, TRUE, (β #{2})) .
-   ::// if ( (m_remainingAmount == (β #{0})) ) then { {_:UExpression _ false} } .
+   ::// if ( (m_remainingAmount == (β #{0})) ) then { {_:UExpression _ true} } .
    :://selfdestruct(creator) |.
 
    ://return_ {} |.
@@ -240,32 +240,6 @@ Require Import UMLang.UrsusLib.
 Require Import UMLang.ExecGenerator.
 Require Import UMLang.ExecGen.GenFlags.
 Require Import UMLang.ExecGen.ExecGenDefs.
-
-Require Import FinProof.CommonInstances.
-
-#[global]
-Instance OutgoingMessage_booleq: forall I `{XBoolEquable bool I}, XBoolEquable bool 
-         (OutgoingMessage I).
-intros.
-esplit.
-intros.
-case_eq X; intros; case_eq X0; intros.
-refine (eqb i i0). refine false. refine false.
-refine  (eqb i i1 && eqb i0 i2)%bool.
-Defined.
-
-Definition isMessageSent {I}`{XBoolEquable bool I} (m: OutgoingMessage I) (a: address) (n: N)
-                        (l: XHMap address (XQueue (OutgoingMessage I))) : bool :=
-let subm := q2m (hmapFindWithDefault default a l) in               
-let maxk : option N := xHMapMaxKey subm in 
-match maxk with 
-   | None => false
-   | Some k => 
-      match hmapLookup (k-n) subm with
-      | None => false
-      | Some m' => eqb m m'
-      end
-end. 
 
 #[global, program]
 Instance IDefault_booleq : XBoolEquable bool IDefault.

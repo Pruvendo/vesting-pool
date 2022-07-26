@@ -53,6 +53,7 @@ Require Import UMLang.ExecGen.GenFlags.
 Require Import UMLang.ExecGen.ExecGenDefs.
 Require Import FinProof.CommonInstances.
 
+Require Import CommonQCEnvironment.
 Require Import LocalState.VestingPool.
 Notation rec := LocalStateLRecord.
 Definition computed : LocalStateLRecord  := Eval compute in default. 
@@ -121,18 +122,12 @@ toValue (eval_state (sRReader (m_totalAmount_right rec def) ) l') = amount /\
 toValue (eval_state (sRReader (m_remainingAmount_right rec def) ) l') = amount.
 
 (*Funds are locked in the pool to return until the deadline of the open window.*)
-Definition GVS_12_1 l (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean ))
-  : Prop :=
-isError (eval_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) l) = false ->
-let l' := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) l in
-uint2N (toValue (eval_state (sRReader || tvm->balance () || ) l')) > uint2N amount.
-
 Definition GVS_12_2 lst  (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) (dt : N) : Prop :=
 let l := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst in 
 let poolId := toValue (eval_state (sRReader (id_right rec def)) l) in
 let l' := exec_state (Uinterpreter (claim rec def poolId)) (incr_time l dt) in
-uint2N (toValue (eval_state (sRReader || tvm->balance () || ) l)) > uint2N (toValue (eval_state (sRReader (m_remainingAmount_right rec def) ) l)) ->
-uint2N (toValue (eval_state (sRReader || tvm->balance () || ) l')) > uint2N (toValue (eval_state (sRReader (m_remainingAmount_right rec def) ) l')).
+uint2N (toValue (eval_state (sRReader || tvm->balance () || ) l)) >= uint2N (toValue (eval_state (sRReader (m_remainingAmount_right rec def) ) l)) ->
+uint2N (toValue (eval_state (sRReader || tvm->balance () || ) l')) >= uint2N (toValue (eval_state (sRReader (m_remainingAmount_right rec def) ) l')).
 
 (*To prevent incorrect usage of the pool it can  transfer only once per time-slot after the first call. The  rest of calls to transfer within a time are rejected.  *)
 Definition GVS_13 lst  (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) n (dt : N): Prop := 
@@ -170,8 +165,6 @@ let _cliffEnd := toValue (eval_state (sRReader (m_cliffEnd_right rec def) ) l) i
 isError (eval_state (Uinterpreter (claim rec def poolId)) (incr_time l dt)) = true.
 
 (*Any attempt to claim after vestingEnd must lead to sending the rest of the amount to the recipient and the change back to the creator. Also the pool must suicide itself.*)
-(* TODO suicide
-transfer to creator *)
 Definition GVS_16 lst (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) (dt : N): Prop :=
  let l := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst in 
  let poolId := toValue (eval_state (sRReader (id_right rec def)) l) in
@@ -180,29 +173,40 @@ Definition GVS_16 lst (amount :  uint128) (cliffMonths :  uint8) (vestingMonths 
  let _vestingEnd := toValue (eval_state (sRReader (m_vestingEnd_right rec def) ) l) in
  let addr := toValue (eval_state (sRReader (m_recipient_right rec def) ) l) in
  let value := (toValue (eval_state (sRReader (m_remainingAmount_right rec def) ) l)) in
-
+ let creator := toValue (eval_state (sRReader (creator_right rec def)) l) in
  let mes := (EmptyMessage IDefault (value, (true, Build_XUBInteger 2))) in
+ let self_destruct_mes := (EmptyMessage IDefault (Build_XUBInteger 0, (false, Build_XUBInteger 128)))  in
+ let end_balance := toValue (eval_state (sRReader || tvm->balance () || ) l') in
  isError (eval_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst) = false ->
  false = isError (eval_state (Uinterpreter (claim rec def poolId)) (incr_time l dt)) -> 
  (uint2N _now > uint2N _vestingEnd) ->
+   addr <> creator ->
    isMessageSent mes addr 0 
-   (toValue (eval_state (sRReader (ULtoRValue (IDefault_left rec def))) l')) = true.
+   (toValue (eval_state (sRReader (ULtoRValue (IDefault_left rec def))) l')) = true /\
+   isMessageSent self_destruct_mes creator 0
+    (toValue (eval_state (sRReader (ULtoRValue (IDefault_left rec def))) l')) = true /\
+   end_balance = Build_XUBInteger 0.
 
  (* The remaining amount for each successful claim is decreased by the transfer amount to the recipient*)
-Definition GVS_17_1 lst (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) (dt : N): Prop :=
+Definition GVS_17 lst (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) (dt : N): Prop :=
  let l := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst in 
  let poolId := toValue (eval_state (sRReader (id_right rec def)) l) in
+ let creator := toValue (eval_state (sRReader (creator_right rec def)) l) in
  let lt := incr_time l dt in
  let l' := exec_state (Uinterpreter (claim rec def poolId)) lt in
  let addr := toValue (eval_state (sRReader (m_recipient_right rec def) ) lt) in
  let value := fst (toValue (eval_state (sRReader (calcUnlocked_right rec def ) ) lt)) in
  let remains := toValue (eval_state (sRReader (m_remainingAmount_right rec def) ) lt) in
- let skip_suicide := if (eqb remains value):bool then 1 else 0 in
  let mes := (EmptyMessage IDefault (value, (true, Build_XUBInteger 2))) in
+ let self_destruct_mes := (EmptyMessage IDefault (Build_XUBInteger 0, (false, Build_XUBInteger 128)))  in
  isError (eval_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst) = false ->
  isError (eval_state (Uinterpreter (claim rec def poolId)) lt) = false -> 
-   isMessageSent mes addr skip_suicide
-   (toValue (eval_state (sRReader (ULtoRValue (IDefault_left rec def))) l')) = true.
+ creator <> recipient ->
+   isMessageSent mes addr 0
+   (toValue (eval_state (sRReader (ULtoRValue (IDefault_left rec def))) l')) = true /\
+   (remains = value ->
+    isMessageSent self_destruct_mes creator 0
+    (toValue (eval_state (sRReader (ULtoRValue (IDefault_left rec def))) l')) = true).
 
 (* If the current time is after cliff period and before the vesting end (that effectively means that vesting period is more than zero) the amount to vest is calculated by the following formula*)
 Definition GVS_18 lst (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) value (dt : N)
