@@ -122,6 +122,15 @@ toValue (eval_state (sRReader (m_totalAmount_right rec def) ) l') = amount /\
 toValue (eval_state (sRReader (m_remainingAmount_right rec def) ) l') = amount.
 
 (*Funds are locked in the pool to return until the deadline of the open window.*)
+Definition GVS_12_1 lst  (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) (dt : N) : Prop :=
+let l := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst in 
+let poolId := toValue (eval_state (sRReader (id_right rec def)) l) in
+let l' := exec_state (Uinterpreter (claim rec def poolId)) (incr_time l dt) in
+let _now := toValue (eval_state (sRReader || (now) || ) l') in
+isError (eval_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst) = false ->
+uint2N _now < uint2N (toValue (eval_state (sRReader (m_cliffEnd_right rec def) ) l)) ->
+uint2N (toValue (eval_state (sRReader (m_totalAmount_right rec def) ) l')) = uint2N (toValue (eval_state (sRReader (m_remainingAmount_right rec def) ) l')).
+
 Definition GVS_12_2 lst  (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  XHMap  ( uint256 )( boolean )) (dt : N) : Prop :=
 let l := exec_state (Uinterpreter (constructor rec def amount cliffMonths vestingMonths recipient claimers)) lst in 
 let poolId := toValue (eval_state (sRReader (id_right rec def)) l) in

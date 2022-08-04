@@ -199,8 +199,31 @@ GVS_05_2 {$$
 
 (* ok *)
 QuickCheck GVS_05_2_propb.
+
+Definition GVS_07_1_propb l
+    (amount :  uint128) 
+    (cliffMonths :  uint8) 
+    (vestingMonths :  uint8) 
+    (recipient :  XUBInteger 256) 
+    (claimers :  mapping uint256 uint256)
+    ( ms: address )
+    ( mv: N )
+    ( addr: address ) 
+    (bal : N): bool :=
+let v3 := {$$ VMStateDefault with VMState_ι_msg_sender := ms $$} in
+let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
+let v5 := {$$ v4 with VMState_ι_address := addr $$} in
+let v6 := {$$ v4 with VMState_ι_balance := Build_XUBInteger (10 * (mv + bal)) $$} in
+
+GVS_07_1 {$$ 
+        {$$ LedgerDefault with Ledger_MainState := l $$}
+                            with Ledger_VMState := v6 $$}
+       amount cliffMonths vestingMonths  (0%Z, recipient) claimers ? .
+
+(* ok *)
+QuickCheck GVS_07_1_propb.
    
-Definition GVS_07_propb l
+Definition GVS_07_2_propb l
       (amount :  uint128) 
       (cliffMonths :  uint8) 
       (vestingMonths :  uint8) 
@@ -215,13 +238,13 @@ let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
 let v5 := {$$ v4 with VMState_ι_address := tvm_addr $$} in
 let v6 := {$$ v4 with VMState_ι_balance := Build_XUBInteger (10 * (mv + bal)) $$} in
            
-   GVS_07 {$$ 
+   GVS_07_2 {$$ 
            {$$ LedgerDefault with Ledger_MainState := l $$}
                                with Ledger_VMState := v6 $$}
         amount cliffMonths vestingMonths (0%Z, recipient) claimers ? .
 
 (* ok *)
-QuickChick GVS_07_propb.
+QuickChick GVS_07_2_propb.
 
 Definition GVS_08_propb l
     (amount :  uint128) 
