@@ -71,28 +71,16 @@ exec_state (Uinterpreter (createPool rec def amount cliffMonths vestingMonths re
 (*New pool can be created  by anybody, after being addressed as Creator*)
 Definition GVS_01 l (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping uint256 uint256) 
   : Prop :=
-let MAX_CLAIMERS := toValue (eval_state (sRReader (MAX_CLAIMERS_right rec def) ) l) in
 let sender := toValue (eval_state (sRReader || msg->sender  || ) l) in
-let addr :=  toValue (eval_state (sRReader || address(this) || ) l) in
-length_ claimers >= 0 ->
-length_ claimers <= uint2N MAX_CLAIMERS -> 
-uint2N (snd recipient) <>  0 ->
-fst recipient = 0%Z ->
-uint2N (toValue (eval_state (sRReader || msg->value  || ) l)) >=
-uint2N  amount  + 
-uint2N (toValue (eval_state (sRReader (FEE_CREATE_right rec def) ) l)) + 
- uint2N (toValue (eval_state (sRReader (CONSTRUCTOR_GAS_right rec def) ) l)) + 
- uint2N (toValue (eval_state (sRReader (STORAGE_FEE_right rec def) ) l)) + 
-uint2N (toValue (eval_state (sRReader (FEE_CLAIM_right rec def) ) l)) * uint2N vestingMonths  -> 
-(fst sender <> 0%Z \/ snd sender <> Build_XUBInteger 0) ->
-isError (eval_state (Uinterpreter (createPool rec def amount cliffMonths vestingMonths recipient claimers)) l) = false.
+(fst sender = 0%Z /\ snd sender = Build_XUBInteger 0) ->
+isError (eval_state (Uinterpreter (createPool rec def amount cliffMonths vestingMonths recipient claimers)) l) = true.
 
 (* Anybody non-empty can be included into the client public key list *)
 Definition GVS_02 l (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers claimers' :  mapping uint256 uint256)
   : Prop :=
 let MAX_CLAIMERS := toValue (eval_state (sRReader (MAX_CLAIMERS_right rec def) ) l) in
 isError (eval_state (Uinterpreter (createPool rec def amount cliffMonths vestingMonths recipient claimers)) l) = false ->
-length_ claimers' >= 0 ->
+length_ claimers' > 0 ->
 length_ claimers' <= uint2N MAX_CLAIMERS -> 
 isError (eval_state (Uinterpreter (createPool rec def amount cliffMonths vestingMonths recipient claimers')) l) = false.
 
@@ -126,7 +114,25 @@ isError (eval_state (Uinterpreter (createPool rec def amount cliffMonths vesting
 (*GVS_06 in VestingPool *)
 
  (*If all the input is correct a new VestingPool is created*)
-Definition GVS_07 l (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping uint256 uint256)
+Definition GVS_07_1 l (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping uint256 uint256) 
+ : Prop :=
+let MAX_CLAIMERS := toValue (eval_state (sRReader (MAX_CLAIMERS_right rec def) ) l) in
+let sender := toValue (eval_state (sRReader || msg->sender  || ) l) in
+let addr :=  toValue (eval_state (sRReader || address(this) || ) l) in
+length_ claimers >= 0 ->
+length_ claimers <= uint2N MAX_CLAIMERS -> 
+uint2N (snd recipient) <>  0 ->
+fst recipient = 0%Z ->
+uint2N (toValue (eval_state (sRReader || msg->value  || ) l)) >=
+uint2N  amount  + 
+uint2N (toValue (eval_state (sRReader (FEE_CREATE_right rec def) ) l)) + 
+uint2N (toValue (eval_state (sRReader (CONSTRUCTOR_GAS_right rec def) ) l)) + 
+uint2N (toValue (eval_state (sRReader (STORAGE_FEE_right rec def) ) l)) + 
+uint2N (toValue (eval_state (sRReader (FEE_CLAIM_right rec def) ) l)) * uint2N vestingMonths  -> 
+(fst sender <> 0%Z \/ snd sender <> Build_XUBInteger 0) ->
+isError (eval_state (Uinterpreter (createPool rec def amount cliffMonths vestingMonths recipient claimers)) l) = false.
+
+Definition GVS_07_2 l (amount :  uint128) (cliffMonths :  uint8) (vestingMonths :  uint8) (recipient :  address) (claimers :  mapping uint256 uint256)
   : Prop :=
  let claimersMap := toValue (eval_state (Uinterpreter  (createClaimersMap rec def claimers) ) l) in 
  let mes_cons := (IVestingPool._constructor amount cliffMonths vestingMonths recipient claimersMap) in

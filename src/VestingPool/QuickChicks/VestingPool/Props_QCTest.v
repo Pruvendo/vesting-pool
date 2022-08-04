@@ -210,6 +210,34 @@ Compute GVS_11_propb l
 QuickCheck GVS_11_propb.
 *)
 
+Definition GVS_12_1_propb l
+    (amount :  uint128) 
+    (cliffMonths :  uint8) 
+    (vestingMonths :  uint8) 
+    (recipient :  address) 
+    (claimers :  mapping uint256 boolean)
+    (mpk: uint256)
+    (nw: uint32)
+    (acc : bool)
+    ( ms: address )
+    ( mv: N )
+    (dt : N) 
+    (bal: N) : bool :=
+let v0 := {$$ VMStateDefault with VMState_ι_msg_pubkey := mpk $$} in     
+let v1 := {$$ v0 with VMState_ι_now := nw $$} in
+let v2 := {$$ v1 with VMState_ι_accepted := acc $$} in
+let v3 := {$$ v2 with VMState_ι_msg_sender := ms $$} in
+let v4 := {$$ v3 with VMState_ι_msg_value := Build_XUBInteger (10 * mv) $$} in
+let v5 := {$$ v4 with VMState_ι_balance := Build_XUBInteger (10 * (mv + bal)) $$} in
+
+GVS_12_1 {$$ 
+            {$$ LedgerDefault with Ledger_MainState := l $$}
+                    with Ledger_VMState := v5 $$}
+        amount cliffMonths vestingMonths recipient claimers (dt * 15 * 86400) ? .
+
+(* ok *)
+QuickCheck GVS_12_1_propb.
+
 Definition GVS_12_2_propb l
     (amount :  uint128) 
     (cliffMonths :  uint8) 
